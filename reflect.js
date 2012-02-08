@@ -1388,7 +1388,9 @@ function abstract(name) {
     throw new TypeError("Missing fundamental trap: "+name);
   };
 }
- 
+
+// TODO: consider defining VirtualHandler as a singleton object,
+// instead of as a constructor function. It is a stateless abstraction.
 function VirtualHandler() { };
 global.Reflect.VirtualHandler = VirtualHandler;
 VirtualHandler.prototype = {
@@ -1583,7 +1585,7 @@ VirtualHandler.prototype = {
 var primCreate = Proxy.create,
     primCreateFunction = Proxy.createFunction;
 
-Proxy = function(target, handler) {
+Reflect.Proxy = function(target, handler) {
   // check that target is an Object
   if (Object(target) !== target) {
     throw new TypeError("Proxy target must be an Object, given "+target);

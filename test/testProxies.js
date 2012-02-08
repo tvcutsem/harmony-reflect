@@ -37,6 +37,7 @@
  */
 
 load('../reflect.js');
+Proxy = Reflect.Proxy;
 
 function assert(b, msg) {
   print((b ? 'success: ' : 'fail: ') + msg);
