@@ -36,7 +36,7 @@
  *
  */
 
-(function(global){ // function-as-module pattern
+(function(global, nonstrictDelete){ // function-as-module pattern
 "use strict";
 
 // ----------------------------------------------------------------------------
@@ -1232,7 +1232,7 @@ global.Reflect = {
     return true;
   },
   deleteProperty: function(target, name) {
-    return delete target[name];
+    return nonstrictDelete(target, name);
   },
   freeze: function(target) {
     Object.freeze(target);
@@ -1616,4 +1616,7 @@ Reflect.Proxy = function(target, handler) {
   return proxy;
 };
 
-}(this)); // function-as-module pattern
+}(this, function(target, name) {
+  // non-strict delete, will never throw
+  return delete target[name];
+})); // function-as-module pattern
