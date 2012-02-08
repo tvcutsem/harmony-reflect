@@ -150,6 +150,21 @@
 
 // ----------------------------------------------------------------------------
 
+// ---- WeakMap polyfill ----
+
+// TODO: find a proper WeakMap polyfill
+
+// define an empty WeakMap so that at least the Reflect module code
+// will work in the absence of WeakMaps. Proxy emulation depends on
+// actual WeakMaps, so will not work with this little shim.
+if (typeof WeakMap === "undefined") {
+  global.WeakMap = function(){};
+  global.WeakMap.prototype = {
+    get: function(k) { return undefined; },
+    set: function(k,v) { throw new Error("WeakMap not supported"); }
+  };
+}
+
 // ---- Normalization functions for property descriptors ----
 
 function isStandardAttribute(name) {
@@ -1635,6 +1650,10 @@ if (typeof Proxy !== "undefined") {
   
 }
 
+// to support iteration protocol in non-spidermonkey environments:
+if (typeof StopIteration === "undefined") {
+  global.StopIteration = {};
+}
 
 }(this, function(target, name) {
   // non-strict delete, will never throw
