@@ -59,15 +59,14 @@
 //  - Object.{isFrozen,isSealed,isExtensible}
 //  - Object.getPrototypeOf
 //  - Object.prototype.valueOf
-//  - Proxy
-//  - Proxy.create{Function}
 // Adds new globals:
 //  - Reflect
 
-// Loading this file will automatically patch Proxy.create and
-// Proxy.createFunction such that they support direct proxies
-// This is done by automatically wrapping all user-defined proxy handlers
-// in a Validator handler that checks and enforces ES5 invariants.
+// Direct proxies are supported via Reflect.Proxy(target, handler)
+
+// Direct proxies build on non-direct proxies by automatically wrapping
+// all user-defined proxy handlers in a Validator handler that checks and
+// enforces ES5 invariants.
 
 // A direct proxy is a proxy for an existing object called the target object.
 
@@ -1582,39 +1581,60 @@ VirtualHandler.prototype = {
   }
 };
 
-var primCreate = Proxy.create,
-    primCreateFunction = Proxy.createFunction;
+// feature-test whether the Proxy global exists
+if (typeof Proxy !== "undefined") {
 
-Reflect.Proxy = function(target, handler) {
-  // check that target is an Object
-  if (Object(target) !== target) {
-    throw new TypeError("Proxy target must be an Object, given "+target);
+  // if Proxy is a function, direct proxies are already supported
+  if (typeof Proxy !== "function") {
+
+    var primCreate = Proxy.create,
+        primCreateFunction = Proxy.createFunction;
+
+    Reflect.Proxy = function(target, handler) {
+      // check that target is an Object
+      if (Object(target) !== target) {
+        throw new TypeError("Proxy target must be an Object, given "+target);
+      }
+      // check that handler is an Object
+      if (Object(handler) !== handler) {
+        throw new TypeError("Proxy handler must be an Object, given "+handler);
+      }
+
+      var vHandler = new Validator(target, handler);
+      var proxy;
+      if (typeof target === "function") {
+        proxy = primCreateFunction(vHandler,
+          // call trap
+          function() {
+            var args = Array.prototype.slice.call(arguments);
+            return vHandler.apply(target, this, args);
+          },
+          // construct trap
+          function() {
+            var args = Array.prototype.slice.call(arguments);
+            return vHandler.construct(target, args);
+          });
+      } else {
+        proxy = primCreate(vHandler, Object.getPrototypeOf(target));
+      }
+      directProxies.set(proxy, vHandler);
+      return proxy;
+    };
+
+  } else {
+    // Proxy is already a function, so presumably direct proxies
+    // are supported natively
+    Reflect.Proxy = Proxy;
   }
-  // check that handler is an Object
-  if (Object(handler) !== handler) {
-    throw new TypeError("Proxy handler must be an Object, given "+handler);
+} else {
+  // Proxy global not defined, so proxies are not supported
+  
+  Reflect.Proxy = function(_target, _handler) {
+    throw new Error("proxies not supported on this platform");
   }
   
-  var vHandler = new Validator(target, handler);
-  var proxy;
-  if (typeof target === "function") {
-    proxy = primCreateFunction(vHandler,
-      // call trap
-      function() {
-        var args = Array.prototype.slice.call(arguments);
-        return vHandler.apply(target, this, args);
-      },
-      // construct trap
-      function() {
-        var args = Array.prototype.slice.call(arguments);
-        return vHandler.construct(target, args);
-      });
-  } else {
-    proxy = primCreate(vHandler, Object.getPrototypeOf(target));
-  }
-  directProxies.set(proxy, vHandler);
-  return proxy;
-};
+}
+
 
 }(this, function(target, name) {
   // non-strict delete, will never throw
