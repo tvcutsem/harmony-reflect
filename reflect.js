@@ -1267,6 +1267,8 @@ global.Reflect = {
     return ({}).hasOwnProperty.call(target, name);
   },
   get: function(target, name, receiver) {
+    receiver = receiver || target;
+    
     // if target is a proxy, invoke its "get" trap
     var handler = directProxies.get(target);
     if (handler !== undefined) {
@@ -1291,6 +1293,8 @@ global.Reflect = {
     return desc.get.call(receiver);
   },
   set: function(target, name, value, receiver) {
+    receiver = receiver || target;
+    
     // if target is a proxy, invoke its "set" trap
     var handler = directProxies.get(target);
     if (handler !== undefined) {
@@ -1467,7 +1471,9 @@ VirtualHandler.prototype = {
     desc = normalizeAndCompletePropertyDescriptor(desc);
     return desc !== undefined;
   },
-  get: function(target, name, receiver) {    
+  get: function(target, name, receiver) {
+    receiver = receiver || target;
+    
     var desc = this.getOwnPropertyDescriptor(target, name);
     desc = normalizeAndCompletePropertyDescriptor(desc);
     if (desc === undefined) {
@@ -1487,6 +1493,8 @@ VirtualHandler.prototype = {
     return desc.get.call(receiver);
   },
   set: function(target, name, value, receiver) {
+    receiver = receiver || target;
+    
     var ownDesc = this.getOwnPropertyDescriptor(target, name);
     ownDesc = normalizeAndCompletePropertyDescriptor(ownDesc);
     if (isDataDescriptor(ownDesc)) {
