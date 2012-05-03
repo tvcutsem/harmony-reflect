@@ -1292,6 +1292,8 @@ global.Reflect = {
     }
     return desc.get.call(receiver);
   },
+  // Reflect.set implementation based on latest version of [[SetP]] at
+  // http://wiki.ecmascript.org/doku.php?id=harmony:proto_climbing_refactoring
   set: function(target, name, value, receiver) {
     receiver = receiver || target;
     
@@ -1304,51 +1306,55 @@ global.Reflect = {
     // first, check whether target has a non-writable property
     // shadowing name on receiver
     var ownDesc = Object.getOwnPropertyDescriptor(target, name);
-    if (isDataDescriptor(ownDesc)) {
-      if (!ownDesc.writable) return false;
+    if (ownDesc !== undefined) {
+      if (isAccessorDescriptor(ownDesc)) {
+        var setter = ownDesc.set;
+        if (setter === undefined) return false;
+        setter.call(receiver, value); // assumes Function.prototype.call
+        return true;
+      }
+      // otherwise, isDataDescriptor(ownDesc) must be true
+      if (ownDesc.writable === false) return false;
+      if (receiver === target) {
+        var updateDesc =
+          { value: value,
+            // FIXME: it should not be necessary to describe the following
+            // attributes. Added to circumvent a bug in tracemonkey:
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
+            writable:     ownDesc.writable,
+            enumerable:   ownDesc.enumerable,
+            configurable: ownDesc.configurable };
+        Object.defineProperty(receiver, name, updateDesc);
+        return true;
+      } else {
+        if (!Object.isExtensible(receiver)) return false;
+        var newDesc =
+          { value: value,
+            writable: true,
+            enumerable: true,
+            configurable: true };
+        Object.defineProperty(receiver, name, newDesc);
+        return true;
+      }
     }
-    if (isAccessorDescriptor(ownDesc)) {
-      if(ownDesc.set === undefined) return false;
-      ownDesc.set.call(receiver, value);
-      return true;
-    }
-    // name is undefined or a writable data property in target,
-    // search target's prototype
+
+    // name is not defined in target, search target's prototype
     var proto = Object.getPrototypeOf(target);
     if (proto === null) {
       // target was the last prototype, now we know that 'name' is not shadowed
-      // by an accessor or a non-writable data property, so we can update or add
-      // the property to the initial receiver object
-      var receiverDesc = Object.getOwnPropertyDescriptor(receiver, name);
-      if (isAccessorDescriptor(receiverDesc)) {
-        if(receiverDesc.set === undefined) return false;
-        receiverDesc.set.call(receiver, value);
-        return true;
-      }
-      if (isDataDescriptor(receiverDesc)) {
-        if (!receiverDesc.writable) return false;
-        Object.defineProperty(receiver, name,
-          {value: value,
-           // FIXME: it should not be necessary to describe the following
-           // attributes. Added to circumvent a bug in tracemonkey:
-           // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-           writable:     receiverDesc.writable,
-           enumerable:   receiverDesc.enumerable,
-           configurable: receiverDesc.configurable });
-        return true;
-      }
-      // property doesn't exist yet, add it
+      // by an existing (accessor or data) property, so we can add the property
+      // to the initial receiver object
       if (!Object.isExtensible(receiver)) return false;
-      Object.defineProperty(receiver, name,
+      var newDesc =
         { value: value,
           writable: true,
           enumerable: true,
-          configurable: true });
+          configurable: true };
+      Object.defineProperty(receiver, name, newDesc);
       return true;
-    } else {
-      // continue the search in target's prototype
-      return Reflect.set(proto, name, value, receiver);
     }
+    // continue the search in target's prototype
+    return Reflect.set(proto, name, value, receiver);
   },
   enumerate: function(target) {
     var result = [];
@@ -1493,52 +1499,64 @@ VirtualHandler.prototype = {
     return desc.get.call(receiver);
   },
   set: function(target, name, value, receiver) {
-    receiver = receiver || target;
+    // No need to set receiver = receiver || target;
+    // in a trap invocation, receiver should already be set
     
+    // first, check whether target has a non-writable property
+    // shadowing name on receiver, via the fundamental
+    // getOwnPropertyDescriptor trap
     var ownDesc = this.getOwnPropertyDescriptor(target, name);
     ownDesc = normalizeAndCompletePropertyDescriptor(ownDesc);
-    if (isDataDescriptor(ownDesc)) {
-      if (!ownDesc.writable) return false;
+    
+    if (ownDesc !== undefined) {
+      if (isAccessorDescriptor(ownDesc)) {
+        var setter = ownDesc.set;
+        if (setter === undefined) return false;
+        setter.call(receiver, value); // assumes Function.prototype.call
+        return true;
+      }
+      // otherwise, isDataDescriptor(ownDesc) must be true
+      if (ownDesc.writable === false) return false;
+      if (receiver === target) {
+        var updateDesc =
+          { value: value,
+            // FIXME: it should not be necessary to describe the following
+            // attributes. Added to circumvent a bug in tracemonkey:
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
+            writable:     ownDesc.writable,
+            enumerable:   ownDesc.enumerable,
+            configurable: ownDesc.configurable };
+        Object.defineProperty(receiver, name, updateDesc);
+        return true;
+      } else {
+        if (!Object.isExtensible(receiver)) return false;
+        var newDesc =
+          { value: value,
+            writable: true,
+            enumerable: true,
+            configurable: true };
+        Object.defineProperty(receiver, name, newDesc);
+        return true;
+      }
     }
-    if (isAccessorDescriptor(ownDesc)) {
-      if(ownDesc.set === undefined) return false;
-      ownDesc.set.call(receiver, value);
-      return true;
-    }
+
+    // name is not defined in target, search target's prototype
     var proto = Object.getPrototypeOf(target);
     if (proto === null) {
-      // TODO: consider wrapping the next 2 if-tests in an
-      // if (target !== receiver) test, since otherwise receiverDesc
-      // should be the same as ownDesc and we already know the outcome
-      var receiverDesc = Object.getOwnPropertyDescriptor(receiver, name);
-      if (isAccessorDescriptor(receiverDesc)) {
-        if(receiverDesc.set === undefined) return false;
-        receiverDesc.set.call(receiver, value);
-        return true;
-      }
-      if (isDataDescriptor(receiverDesc)) {
-        if (!receiverDesc.writable) return false;
-        Object.defineProperty(receiver, name, {
-          value: value,
-          // FIXME: it should not be necessary to describe the following
-          // attributes. Added to circumvent a bug in tracemonkey:
-          // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-          writable:     receiverDesc.writable,
-          enumerable:   receiverDesc.enumerable,
-          configurable: receiverDesc.configurable
-        });
-        return true;
-      }
+      // target was the last prototype, now we know that 'name' is not shadowed
+      // by an existing (accessor or data) property, so we can add the property
+      // to the initial receiver object
       if (!Object.isExtensible(receiver)) return false;
-      Object.defineProperty(receiver, name,
+      var newDesc =
         { value: value,
           writable: true,
           enumerable: true,
-          configurable: true });
+          configurable: true };
+      Object.defineProperty(receiver, name, newDesc);
       return true;
-    } else {
-      return Reflect.set(proto, name, value, receiver);
     }
+    // continue the search in target's prototype
+    return Reflect.set(proto, name, value, receiver);
   },
   enumerate: function(target) {
     var trapResult = this.getOwnPropertyNames(target);
