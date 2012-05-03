@@ -36,33 +36,44 @@
  *
  */
 
+ // ----------------------------------------------------------------------------
+
+ // This file is a polyfill for the upcoming ECMAScript Reflect API,
+ // including support for Proxies. See the draft specification at:
+ // http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
+ // http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies
+ // http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
+ 
+ // It supersedes the earlier polyfill at:
+ // code.google.com/p/es-lab/source/browse/trunk/src/proxies/DirectProxies.js
+
+ // This code was tested on tracemonkey / Firefox 7 / Firefox 12
+ // The code also loads correctly on
+ //   v8 --harmony_proxies --harmony_weakmaps (v3.6.5.1)
+ // but does not work entirely as intended, since v8 proxies, as specified,
+ // don't allow proxy handlers to return non-configurable property descriptors
+
+ // Language Dependencies:
+ //  - ECMAScript 5/strict
+ //  - "old" (i.e. non-direct) Harmony Proxies with non-standard support
+ //    for passing through non-configurable properties
+ //  - Harmony WeakMaps
+ // Patches:
+ //  - Object.{freeze,seal,preventExtensions}
+ //  - Object.{isFrozen,isSealed,isExtensible}
+ //  - Object.getPrototypeOf
+ //  - Object.prototype.valueOf
+ // Adds new globals:
+ //  - Reflect
+
+ // Direct proxies can be created via Reflect.Proxy(target, handler)
+
+ // ----------------------------------------------------------------------------
+
 (function(global, nonstrictDelete){ // function-as-module pattern
 "use strict";
 
-// ----------------------------------------------------------------------------
-// this is a prototype implementation of
-// http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies
-
-// This code was tested on tracemonkey / Firefox 7 / Firefox 8
-// The code also loads correctly on
-//   v8 --harmony_proxies --harmony_weakmaps (v3.6.5.1)
-// but does not work entirely as intended, since v8 proxies, as specified,
-// don't allow proxy handlers to return non-configurable property descriptors
-
-// Language Dependencies:
-//  - ECMAScript 5/strict
-//  - Harmony Proxies with non-standard support for passing through
-//    non-configurable properties
-//  - Harmony WeakMaps
-// Patches:
-//  - Object.{freeze,seal,preventExtensions}
-//  - Object.{isFrozen,isSealed,isExtensible}
-//  - Object.getPrototypeOf
-//  - Object.prototype.valueOf
-// Adds new globals:
-//  - Reflect
-
-// Direct proxies are supported via Reflect.Proxy(target, handler)
+// === Direct Proxies: Invariant Enforcement ===
 
 // Direct proxies build on non-direct proxies by automatically wrapping
 // all user-defined proxy handlers in a Validator handler that checks and
