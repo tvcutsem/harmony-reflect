@@ -6,12 +6,13 @@ After loading `reflect.js`, the following methods/objects are patched to be able
     Object.{isFrozen,isSealed,isExtensible}
     Object.getPrototypeOf
     Object.prototype.valueOf
+		Proxy
 
 In addition, a global object `Reflect` is defined that houses the functions from the ES-Harmony `reflect` module.
 
-The `Reflect` object defines `Reflect.Proxy` which implements [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies). To create a direct proxy, use:
+The `Reflect` object defines `Reflect.Proxy` which implements [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies). To create a direct proxy, call:
 
-    var proxy = Reflect.Proxy(target, handler)
+    var proxy = Proxy(target, handler)
 
 API
 ===

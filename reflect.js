@@ -63,10 +63,11 @@
  //  - Object.{isFrozen,isSealed,isExtensible}
  //  - Object.getPrototypeOf
  //  - Object.prototype.valueOf
+ //  - Proxy
  // Adds new globals:
  //  - Reflect
 
- // Direct proxies can be created via Reflect.Proxy(target, handler)
+ // Direct proxies can be created via Proxy(target, handler)
 
  // ----------------------------------------------------------------------------
 
@@ -1686,6 +1687,10 @@ if (typeof Proxy !== "undefined") {
   }
   
 }
+
+// override the old global Proxy object
+// with the new Proxy object exported by this library
+global.Proxy = Reflect.Proxy;
 
 // to support iteration protocol in non-spidermonkey environments:
 if (typeof StopIteration === "undefined") {
