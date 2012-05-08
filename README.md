@@ -6,7 +6,7 @@ After loading `reflect.js`, the following methods/objects are patched to be able
     Object.{isFrozen,isSealed,isExtensible}
     Object.getPrototypeOf
     Object.prototype.valueOf
-		Proxy
+    Proxy
 
 In addition, a global object `Reflect` is defined that houses the functions from the ES-Harmony `reflect` module.
 
