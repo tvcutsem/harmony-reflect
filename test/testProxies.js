@@ -36,6 +36,14 @@
  *
  */
 
+// for node.js
+if(typeof require === 'function') {
+  var load = require;
+  var print = function(msg) {
+    if(/^fail/.test(msg)) { console.error(msg); }
+    else { console.log(msg); }
+  }
+}
 load('../reflect.js');
 Proxy = Reflect.Proxy;
 
