@@ -479,13 +479,20 @@ Validator.prototype = {
   getOwnPropertyDescriptor: function(name) {
     "use strict";
     
+    var desc;
     var trap = this.getTrap("getOwnPropertyDescriptor");
     if (trap === undefined) {
-      return Reflect.getOwnPropertyDescriptor(this.target, name);
+      desc = Reflect.getOwnPropertyDescriptor(this.target, name);
+      // If desc exists but is non-configurable,
+      // returning it from this trap will cause a TypeError.
+      if(desc !== undefined) {
+        desc.configurable = true;
+      }
+      return desc;
     }
     
     name = String(name);
-    var desc = trap(this.target, name);
+    desc = trap(this.target, name);
     desc = normalizeAndCompletePropertyDescriptor(desc);
     if (desc === undefined) {      
       if (isSealed(name, this.target)) {
@@ -532,7 +539,12 @@ Validator.prototype = {
       throw new TypeError("cannot report a non-configurable descriptor "+
                           "for non-existent property '"+name+"'");
     }
-    
+
+    // If desc exists but is non-configurable,
+    // returning it from this trap will cause a TypeError.
+    if(desc !== undefined) {
+      desc.configurable = true;
+    }
     return desc;
   },
   
