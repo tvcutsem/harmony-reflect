@@ -64,11 +64,17 @@ Dependencies
 
   *  ECMAScript 5/strict
   *  To emulate direct proxies:
-    *  old Harmony [Proxies](http://wiki.ecmascript.org/doku.php?id=harmony:proxies) with non-standard support for passing through non-configurable properties
+    *  old Harmony [Proxies](http://wiki.ecmascript.org/doku.php?id=harmony:proxies)
     *  Harmony [WeakMaps](http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps)
 
-Direct Proxy emulation tested on Firefox 8 and recent tracemonkey shells.
-The `Reflect` API was tested on Firefox 8, tracemonkey and v8 (3.7.6 or higher).
+Compatibility
+=============
+
+The `Reflect` API, with support for proxies, was tested on:
+
+  * Firefox 12 (should work since Firefox 4)
+  * tracemonkey
+  * `v8 --harmony_proxies --harmony_weakmaps` (since v3.6.5.1)
 
 Next steps
 ==========

@@ -47,16 +47,14 @@
  // It supersedes the earlier polyfill at:
  // code.google.com/p/es-lab/source/browse/trunk/src/proxies/DirectProxies.js
 
- // This code was tested on tracemonkey / Firefox 7 / Firefox 12
- // The code also loads correctly on
+ // This code was tested on tracemonkey / Firefox 12
+//  (and should run fine on older Firefox versions starting with FF4)
+ // The code also works correctly on
  //   v8 --harmony_proxies --harmony_weakmaps (v3.6.5.1)
- // but does not work entirely as intended, since v8 proxies, as specified,
- // don't allow proxy handlers to return non-configurable property descriptors
 
  // Language Dependencies:
  //  - ECMAScript 5/strict
- //  - "old" (i.e. non-direct) Harmony Proxies with non-standard support
- //    for passing through non-configurable properties
+ //  - "old" (i.e. non-direct) Harmony Proxies
  //  - Harmony WeakMaps
  // Patches:
  //  - Object.{freeze,seal,preventExtensions}
@@ -340,7 +338,8 @@ var prim_preventExtensions = Object.preventExtensions,
     prim_isSealed = Object.isSealed,
     prim_isFrozen = Object.isFrozen,
     prim_getPrototypeOf = Object.getPrototypeOf,
-    prim_valueOf = Object.prototype.valueOf;
+    prim_valueOf = Object.prototype.valueOf,
+    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
 
 /**
  * A property 'name' is fixed if it is an own property of the target.
@@ -1240,6 +1239,20 @@ Object.prototype.valueOf = function() {
     return Object.prototype.valueOf.call(vHandler.target);
   } else {
     return prim_valueOf.call(this);
+  }
+};
+
+// patch Object.getOwnPropertyDescriptor to directly call
+// the Validator.prototype.getOwnPropertyDescriptor trap
+// This is to circumvent an assertion in the built-in Proxy
+// trapping mechanism of v8, which disallows that trap to
+// return non-configurable property descriptors.
+Object.getOwnPropertyDescriptor = function(subject, name) {
+  var vhandler = directProxies.get(subject);
+  if (vhandler !== undefined) {
+    return vhandler.getOwnPropertyDescriptor(name);
+  } else {
+    return prim_getOwnPropertyDescriptor(subject, name);
   }
 };
 
