@@ -61,6 +61,7 @@
  //  - Object.{isFrozen,isSealed,isExtensible}
  //  - Object.getPrototypeOf
  //  - Object.prototype.valueOf
+ //  - Object.getOwnPropertyDescriptor
  //  - Proxy
  // Adds new globals:
  //  - Reflect
