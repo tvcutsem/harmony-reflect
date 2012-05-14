@@ -35,7 +35,14 @@
  * Contributor(s):
  *
  */
-
+// for node.js
+if(typeof require === 'function') {
+  var load = require;
+  var print = function(msg) {
+    if(/^fail/.test(msg)) { console.error(msg); }
+    else { console.log(msg); }
+  }
+}
 load('../reflect.js');
 
 function assert(b, msg) {
