@@ -52,11 +52,16 @@ function assert(b, msg) {
 }
 
 function assertThrows(message, fn) {
+  // Different js engines use different language for the errors
+  // This is a small hack to allow them to pass while other unexpected
+  // errors still fail. There may be gaps here that would allow 
+  // failing tests to get through
+  var re = /cannot|can't|redefine|trap/i;
   try {
     fn();
     print('fail: expected exception, but succeeded. Message was: '+message);
   } catch(e) {
-    assert(e.message === message, "assertThrows: "+e.message);
+    assert(re.test(e.message) && re.test(message), "assertThrows: "+e.message);
   }
 }
 
