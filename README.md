@@ -75,7 +75,7 @@ The `Reflect` API, with support for proxies, was tested on:
 
   * Firefox 12 (should work since Firefox 4)
   * spidermonkey shell
-  * `v8 --harmony_proxies --harmony_weakmaps` (on 3.11.0, should work since at least v3.6)
+  * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
 
 Next steps
 ==========
