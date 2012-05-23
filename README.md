@@ -1,17 +1,12 @@
 This is a shim for the ECMAScript-Harmony [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
 
-After loading `reflect.js`, the following methods/objects are patched to be able to recognize emulated direct proxies:
+After loading
 
-    Object.{freeze,seal,preventExtensions}
-    Object.{isFrozen,isSealed,isExtensible}
-    Object.getPrototypeOf
-    Object.prototype.valueOf
-    Object.getOwnPropertyDescriptor
-    Proxy
+    <script src="reflect.js"></script>
 
-In addition, a global object `Reflect` is defined that houses the functions from the ES-Harmony `reflect` module.
+a global object `Reflect` is defined that contains the functions from the ES-Harmony `reflect` module (see below).
 
-The `Proxy` object follows the newer [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) spec. To create a direct proxy, call:
+The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) spec. To create such a proxy, call:
 
     var proxy = Proxy(target, handler)
 
@@ -20,14 +15,15 @@ API
 
 The global `Reflect` object defines the following properties:
 
-    Reflect.Proxy(target : object, handler : object) -> object
-    
+    // create a proxy handler that readily implements all traps
     Reflect.VirtualHandler() -> object
-    
-    // each of the following functions corresponds
-    // one-to-one with a Proxy trap from the handler API
+
+    // just an alias for the global Proxy object
+    // the 'handler' object may define "traps", which have the
+    // same name and method signature as the functions defined below
+    Reflect.Proxy(target : object, handler : object) -> object
+
     // (type? stands for type | undefined)
-    
     Reflect.getOwnPropertyDescriptor(target : object, name : string) -> object?
     
     Reflect.defineProperty(target : object, name : string, desc : object) -> bool
@@ -60,14 +56,6 @@ The global `Reflect` object defines the following properties:
     
     Reflect.construct(target : object, args : array) -> any
 
-Dependencies
-============
-
-  *  ECMAScript 5/strict
-  *  To emulate direct proxies:
-    *  old Harmony [Proxies](http://wiki.ecmascript.org/doku.php?id=harmony:proxies)
-    *  Harmony [WeakMaps](http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps)
-
 Compatibility
 =============
 
@@ -78,7 +66,24 @@ The `Reflect` API, with support for proxies, was tested on:
   * spidermonkey shell
   * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
   * `node --harmony` (in node v0.7.8)
-  
+
+Dependencies
+============
+
+  *  ECMAScript 5/strict
+  *  To emulate direct proxies:
+    *  old Harmony [Proxies](http://wiki.ecmascript.org/doku.php?id=harmony:proxies)
+    *  Harmony [WeakMaps](http://wiki.ecmascript.org/doku.php?id=harmony:weak_maps)
+
+After loading `reflect.js` into your page or other JS environment, be aware that the following globals are patched to be able to recognize emulated direct proxies:
+
+    Object.{freeze,seal,preventExtensions}
+    Object.{isFrozen,isSealed,isExtensible}
+    Object.getPrototypeOf
+    Object.prototype.valueOf
+    Object.getOwnPropertyDescriptor
+    Proxy
+
 Issues
 ======
 
