@@ -11,7 +11,7 @@ After loading `reflect.js`, the following methods/objects are patched to be able
 
 In addition, a global object `Reflect` is defined that houses the functions from the ES-Harmony `reflect` module.
 
-The `Reflect` object defines `Reflect.Proxy` which implements [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies). To create a direct proxy, call:
+The `Proxy` object follows the newer [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) spec. To create a direct proxy, call:
 
     var proxy = Proxy(target, handler)
 
@@ -20,45 +20,45 @@ API
 
 The global `Reflect` object defines the following properties:
 
-    function Proxy(target : object, handler : object) -> object
+    Reflect.Proxy(target : object, handler : object) -> object
     
-    function VirtualHandler() -> object
+    Reflect.VirtualHandler() -> object
     
     // each of the following functions corresponds
     // one-to-one with a Proxy trap from the handler API
     // (type? stands for type | undefined)
     
-    function getOwnPropertyDescriptor(target : object, name : string) -> object?
+    Reflect.getOwnPropertyDescriptor(target : object, name : string) -> object?
     
-    function defineProperty(target : object, name : string, desc : object) -> bool
+    Reflect.defineProperty(target : object, name : string, desc : object) -> bool
     
-    function getOwnPropertyNames(target : object) -> array[string]
+    Reflect.getOwnPropertyNames(target : object) -> array[string]
     
-    function deleteProperty(target : object, name : string) -> bool
+    Reflect.deleteProperty(target : object, name : string) -> bool
     
-    function enumerate(target : object) -> array[string]
+    Reflect.enumerate(target : object) -> array[string]
     
-    function iterate(target : object) -> iterator
+    Reflect.iterate(target : object) -> iterator
     
-    function freeze(target : object) -> bool
+    Reflect.freeze(target : object) -> bool
     
-    function seal(target : object) -> bool
+    Reflect.seal(target : object) -> bool
     
-    function preventExtensions(target : object) -> bool
+    Reflect.preventExtensions(target : object) -> bool
     
-    function has(target : object, name : string) -> bool
+    Reflect.has(target : object, name : string) -> bool
     
-    function hasOwn(target : object, name : string) -> bool
+    Reflect.hasOwn(target : object, name : string) -> bool
     
-    function keys(target : object) -> array[string]
+    Reflect.keys(target : object) -> array[string]
     
-    function get(target : object, name : string, receiver : object?) -> any
+    Reflect.get(target : object, name : string, receiver : object?) -> any
     
-    function set(target : object, name : string, value : any, receiver : object?) -> bool
+    Reflect.set(target : object, name : string, value : any, receiver : object?) -> bool
     
-    function apply(target : object, receiver : object?, args : array) -> any
+    Reflect.apply(target : object, receiver : object?, args : array) -> any
     
-    function construct(target : object, args : array) -> any
+    Reflect.construct(target : object, args : array) -> any
 
 Dependencies
 ============
