@@ -74,8 +74,15 @@ Compatibility
 The `Reflect` API, with support for proxies, was tested on:
 
   * Firefox 12 (should work since Firefox 4)
+  * Chrome 19, under [an experimental flag](http://www.2ality.com/2012/01/esnext-features.html)
   * spidermonkey shell
   * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
+  * `node --harmony` (in node v0.7.8)
+  
+Issues
+======
+
+See the list of [open issues](https://github.com/tvcutsem/harmony-reflect/issues).
 
 Next steps
 ==========
