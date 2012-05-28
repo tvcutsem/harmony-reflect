@@ -559,7 +559,9 @@ Validator.prototype = {
   getPropertyDescriptor: function(name) {
     var handler = this;
     return {
-      get: function() { return handler.get(this, name); },
+      get: function() {
+        return handler.get(this, name);
+      },
       set: function(val) {
         if (handler.set(this, name, val)) {
           return val;
@@ -1700,6 +1702,7 @@ if (typeof Proxy !== "undefined") {
     throw new Error("proxies not supported on this platform");
   }
   
+
 }
 
 // override the old global Proxy object
@@ -1709,6 +1712,14 @@ global.Proxy = Reflect.Proxy;
 // to support iteration protocol in non-spidermonkey environments:
 if (typeof StopIteration === "undefined") {
   global.StopIteration = {};
+}
+
+// for node.js modules, export every property in the Reflect object
+// as part of the module interface
+if (typeof exports !== 'undefined') {
+  Object.keys(Reflect).forEach(function (key) {
+    exports[key] = Reflect[key];
+  });
 }
 
 }(typeof exports !== 'undefined' ? global : this, function(target, name) {
