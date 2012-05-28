@@ -22,48 +22,8 @@ Then:
 API
 ===
 
-The global `Reflect` object defines the following properties:
-
-    // create a proxy handler that readily implements all traps
-    Reflect.VirtualHandler() -> object
-
-    // just an alias for the global Proxy object
-    // the 'handler' object may define "traps", which have the
-    // same name and method signature as the functions defined below
-    Reflect.Proxy(target : object, handler : object) -> object
-
-    // (type? stands for type | undefined)
-    Reflect.getOwnPropertyDescriptor(target : object, name : string) -> object?
-    
-    Reflect.defineProperty(target : object, name : string, desc : object) -> bool
-    
-    Reflect.getOwnPropertyNames(target : object) -> array[string]
-    
-    Reflect.deleteProperty(target : object, name : string) -> bool
-    
-    Reflect.enumerate(target : object) -> array[string]
-    
-    Reflect.iterate(target : object) -> iterator
-    
-    Reflect.freeze(target : object) -> bool
-    
-    Reflect.seal(target : object) -> bool
-    
-    Reflect.preventExtensions(target : object) -> bool
-    
-    Reflect.has(target : object, name : string) -> bool
-    
-    Reflect.hasOwn(target : object, name : string) -> bool
-    
-    Reflect.keys(target : object) -> array[string]
-    
-    Reflect.get(target : object, name : string, receiver : object?) -> any
-    
-    Reflect.set(target : object, name : string, value : any, receiver : object?) -> bool
-    
-    Reflect.apply(target : object, receiver : object?, args : array) -> any
-    
-    Reflect.construct(target : object, args : array) -> any
+This module exports a single object named `Reflect`.
+See the [API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) docs for details.
 
 Compatibility
 =============
