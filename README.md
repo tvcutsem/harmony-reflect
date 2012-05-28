@@ -1,6 +1,6 @@
 This is a shim for the ECMAScript-Harmony [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
 
-After loading
+In a browser, after loading
 
     <script src="reflect.js"></script>
 
@@ -9,6 +9,15 @@ a global object `Reflect` is defined that contains the functions from the ES-Har
 The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) spec. To create such a proxy, call:
 
     var proxy = Proxy(target, handler)
+    
+If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org):
+
+    npm install harmony-reflect
+    
+Then:
+
+    node
+    > require('harmony-reflect');
 
 API
 ===
