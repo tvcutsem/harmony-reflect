@@ -62,6 +62,7 @@
  //  - Object.getPrototypeOf
  //  - Object.prototype.valueOf
  //  - Object.getOwnPropertyDescriptor
+ //  - Function.prototype.toString
  //  - Proxy
  // Adds new globals:
  //  - Reflect
@@ -340,7 +341,8 @@ var prim_preventExtensions = Object.preventExtensions,
     prim_isFrozen = Object.isFrozen,
     prim_getPrototypeOf = Object.getPrototypeOf,
     prim_valueOf = Object.prototype.valueOf,
-    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
+    prim_Function_prototype_toString = Function.prototype.toString;
 
 /**
  * A property 'name' is fixed if it is an own property of the target.
@@ -1256,6 +1258,17 @@ Object.getOwnPropertyDescriptor = function(subject, name) {
     return vhandler.getOwnPropertyDescriptor(name);
   } else {
     return prim_getOwnPropertyDescriptor(subject, name);
+  }
+};
+
+// patch Function.prototype.toString to unwrap proxies before
+// performing the toString behavior
+Function.prototype.toString = function() {
+  var vHandler = directProxies.get(this);
+  if (vHandler !== undefined) {
+    return prim_Function_prototype_toString.call(vHandler.target);
+  } else {
+    return prim_Function_prototype_toString.call(this);
   }
 };
 
