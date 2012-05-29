@@ -23,7 +23,7 @@ API
 ===
 
 This module exports a single object named `Reflect`.
-See the [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) and [Handler API(https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md) docs for details.
+See the [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) and [Handler API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md) docs for details.
 
 Compatibility
 =============

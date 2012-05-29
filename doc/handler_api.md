@@ -206,7 +206,9 @@ This trap should return an iterator, which is an object with a `next()` method.
 
 This trap intercepts the following operations:
 
-  *  `for (var elem of proxy) {...}` triggers the proxy's `iterate` trap and then loops as if by:
+  *  `for (var elem of proxy) {...}`. The `for-of` loop is new in ECMAScript 6. See the [MDN docs](https://developer.mozilla.org/en/JavaScript/Reference/Statements/for...of).
+
+[Iterators](https://developer.mozilla.org/en/JavaScript/Guide/Iterators_and_Generators) are also new in ES6 and iterate over the elements as if by executing:
 
     var iterator = handler.iterator(target);
     try {
@@ -218,7 +220,6 @@ This trap intercepts the following operations:
       if (e !== StopIteration) throw e;
     }
     
-Note: the `for-of` loop is new in ECMAScript 6. See the [MDN docs](https://developer.mozilla.org/en/JavaScript/Reference/Statements/for...of).
 
 ## freeze(target)
 
