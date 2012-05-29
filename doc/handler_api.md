@@ -1,0 +1,251 @@
+# Proxy Handler API
+
+This API documents all the functions that a proxy handler object may implement to trap operations on a proxy object. These functions are also knowns as *traps*. All of these functions correspond one-to-one to a function with the same name and signature in the [Reflect API](api.md). If a trap wants to perform the "default behavior" for an intercepted operation, it can simply call that corresponding function from the handler API.
+
+As an example, the below proxy logs all `get` and `set` operations applied to it, then forwards the operations to its target object:
+
+    var proxy = Proxy({}, {
+      // intercepts proxy[name]
+      get: function(target, name, receiver) {
+        console.log('get',name);
+        return Reflect.get(target, name, receiver);
+      },
+      // intercepts proxy[name] = value
+      set: function(target, name, value, receiver) {
+        console.log('set',name,value);
+        return Reflect.set(target, name, value, receiver);
+      }
+    });
+    
+All traps are *optional*: if missing, the proxy will *automatically* apply the intercepted operation to its `target` object.
+
+## get(target, name, receiver)
+
+Queries the proxy for the value of its `name` property. `receiver` denotes the `this`-binding for the getter function, in case `name` is an accessor property. 
+
+This trap should return the value of the property, or `undefined` if the property does not exist.
+
+`receiver` may be bound to the proxy object itself, so be careful when you touch the object inside the trap: this can easily lead to infinite recursion.
+
+This trap intercepts the following operations:
+
+  *  `proxy[name]`
+  *  `Object.create(proxy)[name]` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `get` trap may be triggered. In this case, `receiver` is bound to the child object.)
+
+## set(target, name, value, receiver)
+
+Asks the proxy to set the value of its `name` property to `value`. `receiver` denotes the `this`-binding for the setter function, in case `name` is an accessor property.
+
+This trap should return a boolean indicating whether or not the update happened successfully.
+
+`receiver` may be bound to the proxy object itself, so be careful when you touch the object inside the trap: this can easily lead to infinite recursion.
+
+This trap intercepts the following operations:
+
+  *  `proxy[name] = value`
+  *  `Object.create(proxy)[name] = value` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `set` trap may be triggered. In this case, `receiver` is bound to the child object.)
+
+## has(target, name)
+
+Queries whether the proxy has an own or inherited property.
+This trap should return a boolean indicating whether the proxy has an own or inherited property called `name`.
+
+This trap intercepts the following operations:
+
+  *  `name in proxy`
+  *  `name in Object.create(proxy)` (i.e. if a proxy is used as a prototype, its `has` trap is triggered if any of its child objects do not have the property)
+
+## hasOwn(target, name)
+
+Queries whether the proxy has an own property.
+This trap should return a boolean indicating whether the proxy has an own (not inherited) property called `name`.
+
+This trap intercepts the following operations:
+
+  *  `Object.prototype.hasOwnProperty.call(proxy, name)`
+
+## keys(target)
+
+Queries the proxy for its own enumerable property names.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  Object.keys(proxy)
+  *  Reflect.keys(proxy)
+
+## apply(target, [receiver], args)
+
+Calls the proxy as a function with `receiver` as the `this`-binding and `args` being the array of actual arguments. This trap can return anything.
+
+This trap is "active" _only_ if `typeof target === "function"`.
+
+`receiver` may be bound to the proxy object itself, so be careful when you touch the object inside the trap: this can easily lead to infinite recursion.
+
+This trap intercepts the following operations:
+
+  * `proxy(...args)`
+  * `Function.prototype.apply.call(proxy, receiver, ...args)`
+  * `Function.prototype.call.call(proxy, receiver, args)`
+
+## construct(target, args)
+
+Tries to call the proxy as a constructor function, to create a new instance object.
+This trap can return anything.
+
+This trap is "active" _only_ if `typeof target === "function"`.
+
+This trap intercepts the following operations:
+
+  * `new proxy(...args)`
+
+## getOwnPropertyDescriptor(target, name)
+
+Queries the proxy object for an own property descriptor.
+This trap should return either a property descriptor object or `undefined`.
+
+`target` is the proxy's target object, `name` is a string.
+
+This trap intercepts the following operations:
+
+  *  Object.getOwnPropertyDescriptor(proxy, name)
+  *  Reflect.getOwnPropertyDescriptor(proxy, name)
+
+The proxy throws a TypeError if:
+
+  *  This trap returns `undefined`, but the `name` property of `target` is non-configurable. If a target property is non-configurable, a proxy cannot hide it.
+  *  This trap returns a property descriptor that is not compatible with the corresponding property in `target` (e.g. `target[name]` is non-configurable and this trap returns a configurable descriptor).
+  *  This trap returns a non-configurable property that doesn't exist on `target`. A non-configurable property can only be exposed if the `target` object has a corresponding property.
+  
+Examples:
+
+    var target = { x: 0 };
+    var handler = {
+      getOwnPropertyDescriptor: function(target, name) {
+        if (name === "y") {
+          return {value: 1, configurable: true};
+        } else {
+          return Reflect.getOwnPropertyDescriptor(target, name);
+        }
+      }
+    };
+    var proxy = Proxy(target, handler);
+    Object.getOwnPropertyDescriptor(proxy, "x")
+      // calls handler.getOwnPropertyDescriptor(target, "x")
+      // returns {value: 0, writable: true, configurable: true, enumerable: true}
+    Object.getOwnPropertyDescriptor(proxy, "y")
+      // calls handler.getOwnPropertyDescriptor(target, "y")
+      // returns {value: 1, writable: false, configurable: true, enumerable: false}
+    Object.getOwnPropertyDescriptor(proxy, "z")
+      // calls handler.getOwnPropertyDescriptor(target, "z")
+      // returns undefined
+
+    Object.defineProperty(target, "y", {value:2,configurable:false});
+    Object.getOwnPropertyDescriptor(proxy, "y")
+      // calls handler.getOwnPropertyDescriptor(target, "y")
+      // throws TypeError: trap returns an incompatible descriptor
+    
+
+## defineProperty(target, name, desc)
+
+Attempts to define a new property on the proxy object.
+This trap should return a boolean to indicate whether or not the definition succeeded.
+
+`target` is the proxy's target object, `name` is a string, `desc` is a property descriptor object. Engines may "normalize" descriptors so that the `desc` argument is bound to a fresh property descriptor object instead of the original object that the client passed to `Object.defineProperty`.
+
+This trap intercepts the following operations:
+
+  *  Object.defineProperty(proxy, name, desc)
+  *  Reflect.defineProperty(proxy, name, desc)
+
+The proxy throws a TypeError if:
+
+  *  This trap returns `true` while `Object.defineProperty(target, name, desc)` would throw. One cannot successfully define incompatible descriptors.
+  * This trap returns `true`, `desc` is non-configurable and `target` has no `name` property. A non-configurable property can only be defined successfully if the `target` object has a corresponding property.
+
+## getOwnPropertyNames(target)
+
+Queries the proxy for all of its own (i.e. not inherited) property names.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  Object.getOwnPropertyNames(proxy)
+  *  Reflect.getOwnPropertyNames(proxy)
+
+The proxy throws a TypeError if:
+
+  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
+  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
+
+## deleteProperty(target, name)
+
+Asks the proxy to delete a property.
+This trap should return a boolean that indicates whether or not the deletion was successful.
+
+`name` is a string.
+
+This trap intercepts the following operations:
+
+  *  `delete proxy[name]`
+
+## enumerate(target)
+
+Queries the proxy for its enumerable own and inherited properties.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  `for (var name in proxy) {...}`
+  *  `for (var name in Object.create(proxy)) {...}` (i.e. a `for-in` loop that encounters a proxy in the prototype chain)
+
+## iterate(target)
+
+Queries the proxy for an iterator on its values.
+This trap should return an iterator, which is an object with a `next()` method.
+
+This trap intercepts the following operations:
+
+  *  `for (var elem of proxy) {...}` triggers the proxy's `iterate` trap and then loops as if by:
+
+    var iterator = handler.iterator(target);
+    try {
+      while (true) {
+        var elem = iterator.next();
+        ...
+      }
+    } catch (e) {
+      if (e !== StopIteration) throw e;
+    }
+    
+Note: the `for-of` loop is new in ECMAScript 6. See the [MDN docs](https://developer.mozilla.org/en/JavaScript/Reference/Statements/for...of).
+
+## freeze(target)
+
+Attempts to freeze the proxy.
+This trap should return a boolean indicating whether the proxy was successfully frozen.
+
+This trap intercepts the following operations:
+
+  *  Object.freeze(proxy)
+  *  Reflect.freeze(proxy)
+
+## seal(target)
+
+Attempts to seal the proxy.
+This trap should return a boolean indicating whether the proxy was successfully sealed.
+
+This trap intercepts the following operations:
+
+  *  Object.seal(proxy)
+  *  Reflect.seal(proxy)
+
+## preventExtensions(target)
+
+Attempts to make the proxy non-extensible.
+This trap should return a boolean indicating whether the proxy was successfully made non-extensible.
+
+This trap intercepts the following operations:
+
+  *  Object.preventExtensions(proxy)
+  *  Reflect.preventExtensions(proxy)

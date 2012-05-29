@@ -1,35 +1,78 @@
 # API
 
-## Reflect.VirtualHandler()
-
-Constructor function whose prototype represents a proxy handler that readily implements all "derived" traps.
-
-Use `VirtualHandler` if you want to implement just the bare minimum number of traps, inheriting sensible default operations for all the other traps.
-
-The intent is for users to "subclass" `VirtualHandler` and override the "fundamental" trap methods, like so:
-
-    function MyHandler(){};
-    MyHandler.prototype = Object.create(Reflect.VirtualHandler.prototype);
-    MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {};
-    MyHandler.prototype.getOwnPropertyNames = function(tgt) {};
-    MyHandler.prototype.defineProperty = function(tgt,name,desc) {};
-    MyHandler.prototype.deleteProperty = function(tgt,name) {};
-    MyHandler.prototype.preventExtensions = function(tgt) {};
-    MyHandler.prototype.apply = function(tgt,rcvr,args) {};
-    
-    var proxy = Proxy(target, new MyHandler());
-
-A "derived" operation such as `name in proxy` will trigger the proxy's "has()" trap, which is inherited from `VirtualHandler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
-
-[Details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
-
 ## Reflect.Proxy(target, handler)
 
 This is an alias for the global Proxy function.
 
-Creates and returns a new proxy object. The `handler` object may define "traps", which are functions with the same name and method signature as the functions defined below. Whenever the corresponding operation is applied to the proxy, the trap is called.
+Creates and returns a new proxy object. The `handler` object may define [trap functions](handler_api.md). These traps are called whenever an operation is applied to the proxy object.
 
 Both target and handler must be non-null objects.
+
+## Reflect.get(target, name, [receiver])
+
+Equivalent to executing `target[name]`, except if `target[name]` is an accessor. In that case, the accessor's "get" method will be executed with its `this` bound to `receiver`.
+
+If `target` is a proxy, calls that proxy's `get` trap.
+
+`name` must be a string.
+`receiver` defaults to `target`.
+
+Returns the value of the property, or `undefined` if the property does not exist.
+
+## Reflect.set(target, name, value, [receiver])
+
+Equivalent to executing `target[name] = value`, except if `target[name]` is an accessor. In that case, the accessor's "set" method will be executed with its `this` bound to `receiver`.
+
+If `target` is a proxy, calls that proxy's `set` trap.
+
+`name` must be a string.
+`receiver` defaults to `target`.
+
+Returns a boolean indicating whether or not the update happened successfully.
+
+## Reflect.has(target, name)
+
+Equivalent to performing `name in target`.
+If `target` is a proxy, calls that proxy's `has` trap.
+
+Name must be a string. Returns a boolean indicating whether `target` has an own or inherited property called "name".
+
+## Reflect.hasOwn(target, name)
+
+Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
+
+If `target` is a proxy, calls that proxy's `hasOwn` trap.
+
+Name must be a string. Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
+
+## Reflect.keys(target)
+
+Same as the ES5 built-in Object.keys(target).
+If `target` is a proxy, calls that proxy's `keys` trap.
+
+Returns an array of strings representing the `target` object's own, enumerable property names.
+
+## Reflect.apply(target, [receiver], args)
+
+Equivalent to calling `target.apply(receiver,args)`, assuming `apply` is the original value of `Function.prototype.apply`.
+
+If `target` is a proxy, calls that proxy's `apply` trap.
+
+`target` must be a function (i.e. `typeof target === "function"`).
+`args` must be an array. `receiver` defaults to `undefined`.
+
+Returns whatever the `target` function returns.
+
+## Reflect.construct(target, args)
+
+Equivalent to calling `new target(...args)`, i.e. constructing a function with a variable number of arguments.
+
+If `target` is a proxy, calls that proxy's `construct` trap.
+
+`target` must be a function (i.e. `typeof target === "function"`).
+`args` must be an array.
+
+Returns the value of the constructor, or the instance itself if the constructor returns a non-object value.
 
 ## Reflect.getOwnPropertyDescriptor(target, name)
 
@@ -90,8 +133,6 @@ Returns an iterator on the target object. You can call `next()` on the iterator 
 
 If `target` is a proxy, calls that proxy's `iterate` trap.
 
-For proxies, the code `for (var name in proxy) {...}` should trigger the proxy's `iterate` trap. The for-in loop is then driven by the returned iterator.
-
 ## Reflect.freeze(target)
 
 Freezes the object as if by calling `Object.freeze(target)`.
@@ -113,68 +154,25 @@ If `target` is a proxy, calls that proxy's `preventExtensions` trap.
 
 Returns a boolean indicating whether the object was successfully made non-extensible.
 
-## Reflect.has(target, name)
+## Reflect.VirtualHandler()
 
-Equivalent to performing `name in target`.
-If `target` is a proxy, calls that proxy's `has` trap.
+Constructor function whose prototype represents a proxy handler that readily implements all "derived" traps.
 
-Name must be a string. Returns a boolean indicating whether `target` has an own or inherited property called "name".
+Use `VirtualHandler` if you want to implement just the bare minimum number of traps, inheriting sensible default operations for all the other traps.
 
-## Reflect.hasOwn(target, name)
+The intent is for users to "subclass" `VirtualHandler` and override the "fundamental" trap methods, like so:
 
-Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
+    function MyHandler(){};
+    MyHandler.prototype = Object.create(Reflect.VirtualHandler.prototype);
+    MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {};
+    MyHandler.prototype.getOwnPropertyNames = function(tgt) {};
+    MyHandler.prototype.defineProperty = function(tgt,name,desc) {};
+    MyHandler.prototype.deleteProperty = function(tgt,name) {};
+    MyHandler.prototype.preventExtensions = function(tgt) {};
+    MyHandler.prototype.apply = function(tgt,rcvr,args) {};
+    
+    var proxy = Proxy(target, new MyHandler());
 
-If `target` is a proxy, calls that proxy's `hasOwn` trap.
+A "derived" operation such as `name in proxy` will trigger the proxy's "has()" trap, which is inherited from `VirtualHandler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
 
-Name must be a string. Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
-
-## Reflect.keys(target)
-
-Same as the ES5 built-in Object.keys(target).
-If `target` is a proxy, calls that proxy's `keys` trap.
-
-Returns an array of strings representing the `target` object's own, enumerable property names.
-
-## Reflect.get(target, name, [receiver])
-
-Equivalent to executing `target[name]`, except if `target[name]` is an accessor. In that case, the accessor's "get" method will be executed with its `this` bound to `receiver`.
-
-If `target` is a proxy, calls that proxy's `get` trap.
-
-`name` must be a string.
-`receiver` defaults to `target`.
-
-Returns the value of the property, or `undefined` if the property does not exist.
-
-## Reflect.set(target, name, value, [receiver])
-
-Equivalent to executing `target[name] = value`, except if `target[name]` is an accessor. In that case, the accessor's "set" method will be executed with its `this` bound to `receiver`.
-
-If `target` is a proxy, calls that proxy's `set` trap.
-
-`name` must be a string.
-`receiver` defaults to `target`.
-
-Returns a boolean indicating whether or not the update happened successfully.
-
-## Reflect.apply(target, [receiver], args)
-
-Equivalent to calling `target.apply(receiver,args)`, assuming `apply` is the original value of `Function.prototype.apply`.
-
-If `target` is a proxy, calls that proxy's `apply` trap.
-
-`target` must be a function (i.e. `typeof target === "function"`).
-`args` must be an array. `receiver` defaults to `undefined`.
-
-Returns whatever the `target` function returns.
-
-## Reflect.construct(target, args)
-
-Equivalent to calling `new target(...args)`, i.e. constructing a function with a variable number of arguments.
-
-If `target` is a proxy, calls that proxy's `construct` trap.
-
-`target` must be a function (i.e. `typeof target === "function"`).
-`args` must be an array.
-
-Returns the value of the constructor, or the instance itself if the constructor returns a non-object value.
+[Details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
