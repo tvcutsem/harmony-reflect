@@ -16,7 +16,7 @@ If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org
     
 Then:
 
-    node
+    node --harmony
     > require('harmony-reflect');
 
 API
