@@ -1266,7 +1266,7 @@ Object.getOwnPropertyDescriptor = function(subject, name) {
 Function.prototype.toString = function() {
   var vHandler = directProxies.get(this);
   if (vHandler !== undefined) {
-    return prim_Function_prototype_toString.call(vHandler.target);
+    return Function.prototype.toString.call(vHandler.target);
   } else {
     return prim_Function_prototype_toString.call(this);
   }
