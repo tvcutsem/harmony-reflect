@@ -10,6 +10,8 @@ Both target and handler must be non-null objects.
 
 ## Reflect.get(target, name, [receiver])
 
+Returns the value of `target`'s `name` property, or `undefined` if the property does not exist.
+
 Equivalent to executing `target[name]`, except if `target[name]` is an accessor. In that case, the accessor's "get" method will be executed with its `this` bound to `receiver`.
 
 If `target` is a proxy, calls that proxy's `get` trap.
@@ -17,9 +19,10 @@ If `target` is a proxy, calls that proxy's `get` trap.
 `name` must be a string.
 `receiver` defaults to `target`.
 
-Returns the value of the property, or `undefined` if the property does not exist.
-
 ## Reflect.set(target, name, value, [receiver])
+
+Attempts to update the value of `target`'s `name` property to `value`.
+Returns a boolean indicating whether or not the update happened successfully.
 
 Equivalent to executing `target[name] = value`, except if `target[name]` is an accessor. In that case, the accessor's "set" method will be executed with its `this` bound to `receiver`.
 
@@ -28,83 +31,89 @@ If `target` is a proxy, calls that proxy's `set` trap.
 `name` must be a string.
 `receiver` defaults to `target`.
 
-Returns a boolean indicating whether or not the update happened successfully.
-
 ## Reflect.has(target, name)
 
+Returns a boolean indicating whether `target` has an own or inherited property called "name".
+
 Equivalent to performing `name in target`.
+
 If `target` is a proxy, calls that proxy's `has` trap.
 
-Name must be a string. Returns a boolean indicating whether `target` has an own or inherited property called "name".
+`name` must be a string.
 
 ## Reflect.hasOwn(target, name)
+
+Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
 
 Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
 
 If `target` is a proxy, calls that proxy's `hasOwn` trap.
 
-Name must be a string. Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
+`name` must be a string.
 
 ## Reflect.keys(target)
 
-Same as the ES5 built-in Object.keys(target).
-If `target` is a proxy, calls that proxy's `keys` trap.
-
 Returns an array of strings representing the `target` object's own, enumerable property names.
 
-## Reflect.apply(target, [receiver], args)
+Same as the ES5 built-in `Object.keys(target)`.
 
-Equivalent to calling `target.apply(receiver,args)`, assuming `apply` is the original value of `Function.prototype.apply`.
+If `target` is a proxy, calls that proxy's `keys` trap.
+
+## Reflect.apply(target, receiver, [args])
+
+Calls the `target` function with its `this`-value bound to `receiver` and with actual arguments as specified by the `args` array. Returns whatever the `target` function returns.
 
 If `target` is a proxy, calls that proxy's `apply` trap.
 
 `target` must be a function (i.e. `typeof target === "function"`).
-`args` must be an array. `receiver` defaults to `undefined`.
+`args` defaults to the empty array.
 
-Returns whatever the `target` function returns.
+In non-strict code, if `receiver` is `null` or `undefined`, the `this`-value will be set to the global object instead.
 
 ## Reflect.construct(target, args)
 
-Equivalent to calling `new target(...args)`, i.e. constructing a function with a variable number of arguments.
+Equivalent to calling `new target(...args)`, i.e. constructing a function with a variable number of arguments. Returns the value of the constructor, or the instance itself if the constructor returns a non-object value.
 
 If `target` is a proxy, calls that proxy's `construct` trap.
 
 `target` must be a function (i.e. `typeof target === "function"`).
 `args` must be an array.
 
-Returns the value of the constructor, or the instance itself if the constructor returns a non-object value.
-
 ## Reflect.getOwnPropertyDescriptor(target, name)
 
-Same as the ES5 built-in Object.getOwnPropertyDescriptor(target, name).
+Returns either a property descriptor object or `undefined` if no own property with that name exists.
+
+Same as the ES5 built-in `Object.getOwnPropertyDescriptor(target, name)`.
+
 If `target` is a proxy, calls that proxy's `getOwnPropertyDescriptor` trap.
 
-`name` must be a string. Returns either a property descriptor object or `undefined` if no own property with that name exists.
+`name` must be a string.
 
 ## Reflect.defineProperty(target, name, desc)
 
-Same as the ES5 built-in Object.defineProperty(target, name, desc).
+Same as the ES5 built-in `Object.defineProperty(target, name, desc)` except that this function returns a boolean indicating whether or not the definition succeeded. The ES5 built-in instead either returns the target object or throws an exception.
+
 If `target` is a proxy, calls that proxy's `defineProperty` trap.
 
-`name` must be a string and `desc` must be a valid property descriptor.
-Unlike the ES5 built-in, which either returns the target object or throws an exception, this function returns a boolean to indicate whether or not the definition succeeded.
+`name` must be a string and `desc` must be a valid property descriptor object.
 
 ## Reflect.getOwnPropertyNames(target)
+
+Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
 
 Same as the ES5 built-in Object.getOwnPropertyNames(target).
 If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
 
-Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
-
 ## Reflect.deleteProperty(target, name)
 
-Calling this function is equivalent to performing `delete target[name]`, except that this function returns a boolean that indicates whether or not the deletion was successful.
+Attempts to delete the `name` property on `target`. Calling this function is equivalent to performing `delete target[name]`, except that this function returns a boolean that indicates whether or not the deletion was successful.
 
 `name` must be a string.
 
 ## Reflect.enumerate(target)
 
-Returns the enumerable own and inherited properties of the `target` object.
+Returns an array of strings representing the enumerable own and inherited properties of the `target` object.
+
 If `target` is a proxy, calls that proxy's `enumerate` trap.
 
 The names are determined as if by executing:
@@ -114,8 +123,6 @@ The names are determined as if by executing:
       props.push(name);
     }
     return props;
-
-Returns an array of strings.
 
 ## Reflect.iterate(target)
 
@@ -135,24 +142,21 @@ If `target` is a proxy, calls that proxy's `iterate` trap.
 
 ## Reflect.freeze(target)
 
-Freezes the object as if by calling `Object.freeze(target)`.
-If `target` is a proxy, calls that proxy's `freeze` trap.
+Freezes the object as if by calling `Object.freeze(target)`. Returns a boolean indicating whether the object was successfully frozen.
 
-Returns a boolean indicating whether the object was successfully frozen.
+If `target` is a proxy, calls that proxy's `freeze` trap.
 
 ## Reflect.seal(target)
 
-Seals the object as if by calling `Object.seal(target)`.
-If `target` is a proxy, calls that proxy's `seal` trap.
+Seals the object as if by calling `Object.seal(target)`. Returns a boolean indicating whether the object was successfully sealed.
 
-Returns a boolean indicating whether the object was successfully sealed.
+If `target` is a proxy, calls that proxy's `seal` trap.
 
 ## Reflect.preventExtensions(target)
 
-Prevents extensions to the object as if by calling `Object.preventExtensions(target)`.
-If `target` is a proxy, calls that proxy's `preventExtensions` trap.
+Prevents extensions to the object as if by calling `Object.preventExtensions(target)`. Returns a boolean indicating whether the object was successfully made non-extensible.
 
-Returns a boolean indicating whether the object was successfully made non-extensible.
+If `target` is a proxy, calls that proxy's `preventExtensions` trap.
 
 ## Reflect.VirtualHandler()
 
@@ -162,8 +166,11 @@ Use `VirtualHandler` if you want to implement just the bare minimum number of tr
 
 The intent is for users to "subclass" `VirtualHandler` and override the "fundamental" trap methods, like so:
 
+    // the "subclass" constructor function
     function MyHandler(){};
+    // set its prototype to an object inheriting from VirtualHandler.prototype
     MyHandler.prototype = Object.create(Reflect.VirtualHandler.prototype);
+    // now override just the following traps:
     MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {};
     MyHandler.prototype.getOwnPropertyNames = function(tgt) {};
     MyHandler.prototype.defineProperty = function(tgt,name,desc) {};
@@ -173,6 +180,6 @@ The intent is for users to "subclass" `VirtualHandler` and override the "fundame
     
     var proxy = Proxy(target, new MyHandler());
 
-A "derived" operation such as `name in proxy` will trigger the proxy's "has()" trap, which is inherited from `VirtualHandler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
+A "derived" operation such as `name in proxy` will trigger the proxy's `has` trap, which is inherited from `VirtualHandler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
 
-[Details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
+[More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
