@@ -336,13 +336,10 @@ function normalizePropertyDescriptor(attributes) {
 var prim_preventExtensions = Object.preventExtensions,
     prim_seal = Object.seal,
     prim_freeze = Object.freeze,
-    prim_isExtensible = Object.isExtensible,
-    prim_isSealed = Object.isSealed,
-    prim_isFrozen = Object.isFrozen,
-    prim_getPrototypeOf = Object.getPrototypeOf,
-    prim_valueOf = Object.prototype.valueOf,
-    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
-    prim_Function_prototype_toString = Function.prototype.toString;
+    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+
+// these will point to the patched versions
+var Object_isFrozen, Object_isSealed, Object_isExtensible;
 
 /**
  * A property 'name' is fixed if it is an own property of the target.
@@ -646,7 +643,7 @@ Validator.prototype = {
     var success = trap(this.target);
     success = !!success; // coerce to Boolean
     if (success) {
-      if (!prim_isFrozen(this.target)) {
+      if (!Object_isFrozen(this.target)) {
         throw new TypeError("can't report non-frozen object as frozen: "+
                             this.target);
       }      
@@ -667,7 +664,7 @@ Validator.prototype = {
     var success = trap(this.target);
     success = !!success; // coerce to Boolean
     if (success) {
-      if (!prim_isSealed(this.target)) {
+      if (!Object_isSealed(this.target)) {
         throw new TypeError("can't report non-sealed object as sealed: "+
                             this.target);
       }      
@@ -688,7 +685,7 @@ Validator.prototype = {
     var success = trap(this.target);
     success = !!success; // coerce to Boolean
     if (success) {
-      if (prim_isExtensible(this.target)) {
+      if (Object_isExtensible(this.target)) {
         throw new TypeError("can't report extensible object as non-extensible: "+
                             this.target);
       }      
@@ -1206,46 +1203,6 @@ Object.freeze = function(subject) {
     return prim_freeze(subject);
   }
 };
-Object.isExtensible = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return Object.isExtensible(vHandler.target);
-  } else {
-    return prim_isExtensible(subject);
-  }
-};
-Object.isSealed = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return Object.isSealed(vHandler.target);
-  } else {
-    return prim_isSealed(subject);
-  }
-};
-Object.isFrozen = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return Object.isFrozen(vHandler.target);
-  } else {
-    return prim_isFrozen(subject);
-  }
-};
-Object.getPrototypeOf = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return Object.getPrototypeOf(vHandler.target);
-  } else {
-    return prim_getPrototypeOf(subject);
-  }
-};
-Object.prototype.valueOf = function() {
-  var vHandler = directProxies.get(this);
-  if (vHandler !== undefined) {
-    return Object.prototype.valueOf.call(vHandler.target);
-  } else {
-    return prim_valueOf.call(this);
-  }
-};
 
 // patch Object.getOwnPropertyDescriptor to directly call
 // the Validator.prototype.getOwnPropertyDescriptor trap
@@ -1261,16 +1218,51 @@ Object.getOwnPropertyDescriptor = function(subject, name) {
   }
 };
 
-// patch Function.prototype.toString to unwrap proxies before
-// performing the toString behavior
-Function.prototype.toString = function() {
-  var vHandler = directProxies.get(this);
-  if (vHandler !== undefined) {
-    return Function.prototype.toString.call(vHandler.target);
-  } else {
-    return prim_Function_prototype_toString.call(this);
+// returns a new function of one argument that applies the
+// given primitive to the argument, after recursively unwrapping
+// any proxies. The primitive is assumed to be a one-argument "static"
+// function of one argument that ignores its |this| value
+function makeUnwrapping1ArgStatic(primitive) {
+  return function builtin(subject) {
+    var vHandler = directProxies.get(subject);
+    if (vHandler !== undefined) {
+      return builtin(vHandler.target);
+    } else {
+      return primitive(subject);
+    } 
   }
 };
+
+// returns a new function of zero arguments that recursively
+// unwraps any proxies specified as the |this|-value.
+// The primitive is assumed to be a zero-argument method
+// that uses its |this|-binding.
+function makeUnwrapping0ArgMethod(primitive) {
+  return function builtin() {
+    var vHandler = directProxies.get(this);
+    if (vHandler !== undefined) {
+      return builtin.call(vHandler.target);
+    } else {
+      return primitive.call(this);
+    } 
+  }
+};
+
+Object.isExtensible = Object_isExtensible =
+  makeUnwrapping1ArgStatic(Object.isExtensible);
+Object.isSealed = Object_isSealed =
+  makeUnwrapping1ArgStatic(Object.isSealed);
+Object.isFrozen = Object_isFrozen =
+  makeUnwrapping1ArgStatic(Object.isFrozen);
+Object.getPrototypeOf =
+  makeUnwrapping1ArgStatic(Object.getPrototypeOf);
+
+Object.prototype.valueOf =
+  makeUnwrapping0ArgMethod(Object.prototype.valueOf);
+Function.prototype.toString =
+  makeUnwrapping0ArgMethod(Function.prototype.toString);
+Date.prototype.toString =
+  makeUnwrapping0ArgMethod(Date.prototype.toString);
 
 // ============= Reflection module =============
 // see http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api

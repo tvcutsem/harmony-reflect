@@ -52,6 +52,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.prototype.valueOf
     Object.getOwnPropertyDescriptor
     Function.prototype.toString
+    Date.prototype.toString
     Proxy
 
 Issues
