@@ -628,7 +628,6 @@ load('../reflect.js');
         return name;
       },
       set: function(tgt, name, val, rcvr) {
-        // FIXME: fails on v8, rcvr is wrongly set to the proxy
         assert(rcvr === child, 'set: receiver is child');
         return true;      
       },
@@ -638,7 +637,7 @@ load('../reflect.js');
     });
     child = Object.create(proxy);
     assert('foo' in child, 'invoking inherited has');
-    // FIXME: fails on v8
+    // FIXME: fails on v8: no has() trap invoked
     assert(!('bar' in child), 'invoking inherited has on non-existent prop');
     assert(child['foo'] === 'foo', 'invoking inherited get');
     assert((child['foo'] = 42) === 42, 'invoking inherited set');
@@ -670,7 +669,6 @@ load('../reflect.js');
     var t = {};
     var p = Proxy(t, {
       defineProperty: function(tgt,name,desc) {
-        // FIXME: fails on v8 because name === 'y'
         assert(name === 'x', 'testSet defineProperty name === x');
         assert(desc.value === 1, 'testSet defineProperty value === 1');
         t.xWasSet = true;
@@ -683,10 +681,8 @@ load('../reflect.js');
     p.x = 1;
     assert(t.xWasSet, 'default set triggers defineProperty');
     var child = Object.create(p);
-    // FIXME: on v8, this triggers the defineProperty trap
     child.y = 1; // should also trigger p's set trap, but Reflect.set will now
                  // define the property on the child
-    // FIXME: fails on v8
     assert(child.y === 1, 'default set on inherited object');
   }
 
