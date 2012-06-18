@@ -31,6 +31,7 @@ This trap intercepts the following operations:
 
   *  `proxy[name]`
   *  `Object.create(proxy)[name]` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `get` trap may be triggered. In this case, `receiver` is bound to the child object.)
+  *  `Reflect.get(proxy,name,receiver)`
 
 ## set(target, name, value, receiver)
 
@@ -44,6 +45,7 @@ This trap intercepts the following operations:
 
   *  `proxy[name] = value`
   *  `Object.create(proxy)[name] = value` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `set` trap may be triggered. In this case, `receiver` is bound to the child object.)
+  *  `Reflect.set(proxy,name,value,receiver)`
 
 ## has(target, name)
 
@@ -54,6 +56,7 @@ This trap intercepts the following operations:
 
   *  `name in proxy`
   *  `name in Object.create(proxy)` (i.e. if a proxy is used as a prototype, its `has` trap is triggered if any of its child objects do not have the property)
+  *  `Reflect.has(proxy,name)`
 
 ## hasOwn(target, name)
 
@@ -63,6 +66,7 @@ This trap should return a boolean indicating whether the proxy has an own (not i
 This trap intercepts the following operations:
 
   *  `Object.prototype.hasOwnProperty.call(proxy, name)`
+  *  `Reflect.hasOwn(proxy,name)`
 
 ## keys(target)
 
@@ -87,6 +91,7 @@ This trap intercepts the following operations:
   * `proxy(...args)` (in this case, `receiver` is bound to `undefined`)
   * `Function.prototype.apply.call(proxy, receiver, args)`
   * `Function.prototype.call.call(proxy, receiver, ...args)`
+  * `Reflect.apply(proxy,receiver,args)`
 
 ## construct(target, args)
 
@@ -97,7 +102,8 @@ This trap is "active" _only_ if `typeof target === "function"`. That is, if the 
 
 This trap intercepts the following operations:
 
-  * `new proxy(...args)`
+  *  `new proxy(...args)`
+  *  `Reflect.construct(proxy,args)`
 
 ## getOwnPropertyDescriptor(target, name)
 
@@ -188,6 +194,7 @@ This trap should return a boolean that indicates whether or not the deletion was
 This trap intercepts the following operations:
 
   *  `delete proxy[name]`
+  *  `Reflect.deleteProperty(proxy, name)`
 
 ## enumerate(target)
 
@@ -198,6 +205,7 @@ This trap intercepts the following operations:
 
   *  `for (var name in proxy) {...}`
   *  `for (var name in Object.create(proxy)) {...}` (i.e. a `for-in` loop that encounters a proxy in the prototype chain)
+  *  `Reflect.enumerate(proxy)`
 
 ## iterate(target)
 
@@ -207,6 +215,7 @@ This trap should return an iterator, which is an object with a `next()` method.
 This trap intercepts the following operations:
 
   *  `for (var elem of proxy) {...}`. The `for-of` loop is new in ECMAScript 6. See the [MDN docs](https://developer.mozilla.org/en/JavaScript/Reference/Statements/for...of).
+  *  `Reflect.iterate(proxy)`
 
 [Iterators](https://developer.mozilla.org/en/JavaScript/Guide/Iterators_and_Generators) are also new in ES6 and iterate over the elements as if by executing:
 
