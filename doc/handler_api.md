@@ -21,7 +21,7 @@ All traps are *optional*: if missing, the proxy will *automatically* apply the i
 
 ## get(target, name, receiver)
 
-Queries the proxy for the value of its `name` property. `receiver` denotes the `this`-binding for the getter function, in case `name` is an accessor property. 
+Called when the proxy's `name` property is accessed. `receiver` denotes the `this`-binding for the getter function, in case `name` is an accessor property.
 
 This trap should return the value of the property, or `undefined` if the property does not exist.
 
@@ -34,7 +34,7 @@ This trap intercepts the following operations:
 
 ## set(target, name, value, receiver)
 
-Asks the proxy to set the value of its `name` property to `value`. `receiver` denotes the `this`-binding for the setter function, in case `name` is an accessor property.
+Called when the proxy's `name` property is assigned to `value`. `receiver` denotes the `this`-binding for the setter function, in case `name` is an accessor property.
 
 This trap should return a boolean indicating whether or not the update happened successfully.
 
@@ -47,7 +47,7 @@ This trap intercepts the following operations:
 
 ## has(target, name)
 
-Queries whether the proxy has an own or inherited property.
+Called when the proxy is queried for an own or inherited property named `name`.
 This trap should return a boolean indicating whether the proxy has an own or inherited property called `name`.
 
 This trap intercepts the following operations:
@@ -57,7 +57,7 @@ This trap intercepts the following operations:
 
 ## hasOwn(target, name)
 
-Queries whether the proxy has an own property.
+Called when the proxy is queried for an own property named `name`.
 This trap should return a boolean indicating whether the proxy has an own (not inherited) property called `name`.
 
 This trap intercepts the following operations:
@@ -66,34 +66,34 @@ This trap intercepts the following operations:
 
 ## keys(target)
 
-Queries the proxy for its own enumerable property names.
+Called when the proxy is queried for its own enumerable property names.
 This trap should return an array of strings.
 
 This trap intercepts the following operations:
 
-  *  Object.keys(proxy)
-  *  Reflect.keys(proxy)
+  *  `Object.keys(proxy)`
+  *  `Reflect.keys(proxy)`
 
-## apply(target, [receiver], args)
+## apply(target, receiver, args)
 
-Calls the proxy as a function with `receiver` as the `this`-binding and `args` being the array of actual arguments. This trap can return anything.
+Called when the proxy is applied as a function with `receiver` as its `this`-binding and `args` as the array of actual arguments. This trap can return anything.
 
-This trap is "active" _only_ if `typeof target === "function"`.
+This trap is "active" _only_ if `typeof target === "function"`. That is, if the target object is not callable, then calling the proxy will throw a TypeError rather than calling the trap.
 
 `receiver` may be bound to the proxy object itself, so be careful when you touch the object inside the trap: this can easily lead to infinite recursion.
 
 This trap intercepts the following operations:
 
-  * `proxy(...args)`
-  * `Function.prototype.apply.call(proxy, receiver, ...args)`
-  * `Function.prototype.call.call(proxy, receiver, args)`
+  * `proxy(...args)` (in this case, `receiver` is bound to `undefined`)
+  * `Function.prototype.apply.call(proxy, receiver, args)`
+  * `Function.prototype.call.call(proxy, receiver, ...args)`
 
 ## construct(target, args)
 
-Tries to call the proxy as a constructor function, to create a new instance object.
+Called when a proxy is treated as a constructor function to create a new instance object.
 This trap can return anything.
 
-This trap is "active" _only_ if `typeof target === "function"`.
+This trap is "active" _only_ if `typeof target === "function"`. That is, if the target object is not callable, then calling `new` on a proxy will throw a TypeError rather than calling this trap.
 
 This trap intercepts the following operations:
 
@@ -101,15 +101,15 @@ This trap intercepts the following operations:
 
 ## getOwnPropertyDescriptor(target, name)
 
-Queries the proxy object for an own property descriptor.
+Called when the proxy object is queried for an own property descriptor.
 This trap should return either a property descriptor object or `undefined`.
 
 `target` is the proxy's target object, `name` is a string.
 
 This trap intercepts the following operations:
 
-  *  Object.getOwnPropertyDescriptor(proxy, name)
-  *  Reflect.getOwnPropertyDescriptor(proxy, name)
+  *  `Object.getOwnPropertyDescriptor(proxy, name)`
+  *  `Reflect.getOwnPropertyDescriptor(proxy, name)`
 
 The proxy throws a TypeError if:
 
@@ -148,15 +148,15 @@ Examples:
 
 ## defineProperty(target, name, desc)
 
-Attempts to define a new property on the proxy object.
+Called when a new property is defined on the proxy object.
 This trap should return a boolean to indicate whether or not the definition succeeded.
 
 `target` is the proxy's target object, `name` is a string, `desc` is a property descriptor object. Engines may "normalize" descriptors so that the `desc` argument is bound to a fresh property descriptor object instead of the original object that the client passed to `Object.defineProperty`.
 
 This trap intercepts the following operations:
 
-  *  Object.defineProperty(proxy, name, desc)
-  *  Reflect.defineProperty(proxy, name, desc)
+  *  `Object.defineProperty(proxy, name, desc)`
+  *  `Reflect.defineProperty(proxy, name, desc)`
 
 The proxy throws a TypeError if:
 
@@ -165,13 +165,13 @@ The proxy throws a TypeError if:
 
 ## getOwnPropertyNames(target)
 
-Queries the proxy for all of its own (i.e. not inherited) property names.
+Called when the proxy is queried for all of its own (i.e. not inherited) property names.
 This trap should return an array of strings.
 
 This trap intercepts the following operations:
 
-  *  Object.getOwnPropertyNames(proxy)
-  *  Reflect.getOwnPropertyNames(proxy)
+  *  `Object.getOwnPropertyNames(proxy)`
+  *  `Reflect.getOwnPropertyNames(proxy)`
 
 The proxy throws a TypeError if:
 
@@ -180,7 +180,7 @@ The proxy throws a TypeError if:
 
 ## deleteProperty(target, name)
 
-Asks the proxy to delete a property.
+Called when a property is deleted on the proxy.
 This trap should return a boolean that indicates whether or not the deletion was successful.
 
 `name` is a string.
@@ -191,7 +191,7 @@ This trap intercepts the following operations:
 
 ## enumerate(target)
 
-Queries the proxy for its enumerable own and inherited properties.
+Called when the proxy is queried for its enumerable own and inherited properties.
 This trap should return an array of strings.
 
 This trap intercepts the following operations:
@@ -201,7 +201,7 @@ This trap intercepts the following operations:
 
 ## iterate(target)
 
-Queries the proxy for an iterator on its values.
+Called when the proxy's properties are iterated over using a `for-of` loop.
 This trap should return an iterator, which is an object with a `next()` method.
 
 This trap intercepts the following operations:
@@ -223,30 +223,30 @@ This trap intercepts the following operations:
 
 ## freeze(target)
 
-Attempts to freeze the proxy.
+Called when an attempt is made to freeze the proxy object.
 This trap should return a boolean indicating whether the proxy was successfully frozen.
 
 This trap intercepts the following operations:
 
-  *  Object.freeze(proxy)
-  *  Reflect.freeze(proxy)
+  *  `Object.freeze(proxy)`
+  *  `Reflect.freeze(proxy)`
 
 ## seal(target)
 
-Attempts to seal the proxy.
+Called when an attempt is made to seal the proxy object.
 This trap should return a boolean indicating whether the proxy was successfully sealed.
 
 This trap intercepts the following operations:
 
-  *  Object.seal(proxy)
-  *  Reflect.seal(proxy)
+  *  `Object.seal(proxy)`
+  *  `Reflect.seal(proxy)`
 
 ## preventExtensions(target)
 
-Attempts to make the proxy non-extensible.
+Called when an attempt is made to make the proxy object non-extensible.
 This trap should return a boolean indicating whether the proxy was successfully made non-extensible.
 
 This trap intercepts the following operations:
 
-  *  Object.preventExtensions(proxy)
-  *  Reflect.preventExtensions(proxy)
+  *  `Object.preventExtensions(proxy)`
+  *  `Reflect.preventExtensions(proxy)`
