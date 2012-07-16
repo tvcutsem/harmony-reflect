@@ -78,6 +78,13 @@ function test() {
     assert(Reflect.defineProperty(target, 'y', {value: 3}) === true &&
            target.y === 3,
            'defineProperty addition success');
+    Object.defineProperty(target,'z',{
+      value:0,
+      writable:false,
+      configurable:false });
+    assert(Reflect.defineProperty(target, 'z', {value: 1}) === false &&
+           target.z === 0,
+           'defineProperty update failure');
   }());
 
   // getOwnPropertyNames(target : object) -> array[string]

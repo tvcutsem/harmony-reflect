@@ -1275,7 +1275,70 @@ var Reflect = global.Reflect = {
     return Object.getOwnPropertyNames(target);
   },
   defineProperty: function(target, name, desc) {
-    Object.defineProperty(target, name, desc);
+    // Implementation transliterated from [[DefineOwnProperty]]
+    // see ES5.1 section 8.12.9
+    // this is the _exact same algorithm_ as the validateProperty
+    // algorithm defined above, except that at every place it
+    // returns true, it actually does define the property.
+    var current = Object.getOwnPropertyDescriptor(target, name);
+    var extensible = Object.isExtensible(target);
+    if (current === undefined && extensible === false) {
+      return false;
+    }
+    if (current === undefined && extensible === true) {
+      Object.defineProperty(target, name, desc); // should never fail
+      return true;
+    }
+    if (isEmptyDescriptor(desc)) {
+      return true;
+    }
+    if (isEquivalentDescriptor(current, desc)) {
+      return true;
+    }
+    if (current.configurable === false) {
+      if (desc.configurable === true) {
+        return false;
+      }
+      if ('enumerable' in desc && desc.enumerable !== current.enumerable) {
+        return false;
+      }
+    }
+    if (isGenericDescriptor(desc)) {
+      Object.defineProperty(target, name, desc); // should never fail
+      return true;
+    }
+    if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
+      if (current.configurable === false) {
+        return false;
+      }
+      Object.defineProperty(target, name, desc); // should never fail
+      return true;
+    }
+    if (isDataDescriptor(current) && isDataDescriptor(desc)) {
+      if (current.configurable === false) {
+        if (current.writable === false && desc.writable === true) {
+          return false;
+        }
+        if (current.writable === false) {
+          if ('value' in desc && !sameValue(desc.value, current.value)) {
+            return false;
+          }
+        }
+      }
+      Object.defineProperty(target, name, desc); // should never fail
+      return true;
+    }
+    if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
+      if (current.configurable === false) {
+        if ('set' in desc && !sameValue(desc.set, current.set)) {
+          return false;
+        }
+        if ('get' in desc && !sameValue(desc.get, current.get)) {
+          return false;
+        }
+      }
+    }
+    Object.defineProperty(target, name, desc); // should never fail
     return true;
   },
   deleteProperty: function(target, name) {
