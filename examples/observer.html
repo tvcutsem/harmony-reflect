@@ -1,0 +1,577 @@
+<!--
+// Copyright (C) 2011-2012 Software Languages Lab, Vrije Universiteit Brussel
+// This code is dual-licensed under both the Apache License and the MPL
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/* Version: MPL 1.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is an implementation of the Observe strawman
+ *
+ * The Initial Developer of the Original Code is
+ * Tom Van Cutsem, Vrije Universiteit Brussel.
+ * Portions created by the Initial Developer are Copyright (C) 2011-2012
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ */
+-->
+
+<!--
+  This is a prototype implementation of the "Observe strawman proposal"
+  at http://wiki.ecmascript.org/doku.php?id=strawman:observe
+  as proposed by Rafael Weinstein, Erik Arvidsson and others
+  
+  Tested on Firefox 13.
+-->
+
+<html>
+<head>
+	<title>Observer</title>
+</head>
+<script src="../reflect.js"></script>
+<!-- to test stand-alone: <script src="https://raw.github.com/tvcutsem/harmony-reflect/master/reflect.js"></script> -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>
+<script>
+(function() {
+  
+  // == Utilities for defineProperty trap ==
+  
+  function isAccessorDescriptor(desc) {
+    if (desc === undefined) return false;
+    return ('get' in desc || 'set' in desc);
+  }
+  function isDataDescriptor(desc) {
+    if (desc === undefined) return false;
+    return ('value' in desc || 'writable' in desc);
+  }
+  function isGenericDescriptor(desc) {
+    if (desc === undefined) return false;
+    return !isAccessorDescriptor(desc) && !isDataDescriptor(desc);
+  }
+  function isEmptyDescriptor(desc) {
+    return !('get' in desc) &&
+           !('set' in desc) &&
+           !('value' in desc) &&
+           !('writable' in desc) &&
+           !('enumerable' in desc) &&
+           !('configurable' in desc);
+  }
+  function isEquivalentDescriptor(desc1, desc2) {
+    return sameValue(desc1.get, desc2.get) &&
+           sameValue(desc1.set, desc2.set) &&
+           sameValue(desc1.value, desc2.value) &&
+           sameValue(desc1.writable, desc2.writable) &&
+           sameValue(desc1.enumerable, desc2.enumerable) &&
+           sameValue(desc1.configurable, desc2.configurable);
+  }
+
+  // copied from http://wiki.ecmascript.org/doku.php?id=harmony:egal
+  function sameValue(x, y) {
+    if (x === y) {
+      // 0 === -0, but they are not identical
+      return x !== 0 || 1 / x === 1 / y;
+    }
+
+    // NaN !== NaN, but they are identical.
+    // NaNs are the only non-reflexive value, i.e., if x !== x,
+    // then x is a NaN.
+    // isNaN is broken: it converts its argument to number, so
+    // isNaN("foo") => true
+    return x !== x && y !== y;
+  }
+  
+  
+  // == Implementation of observe strawman starts here ==
+  
+
+  // implementation-artefact to identify Observable objects
+  // this is irrelevant for the actual strawman
+  var _Observables = new WeakMap();
+  
+  // This list is used to provide a deterministic ordering
+  // in which callbacks are called.
+  var _ObserverCallbacks = [];
+  
+  // the following weakmaps all model private [[internal]] properties
+  
+  // stores a Notifier object's [[Target]] property
+  var _NotifierTarget          = new WeakMap();
+  // stores a Notifier object's [[Target]] property
+  var _NotifierChangeObservers = new WeakMap();
+  // stores a Function object's [[PendingChangeRecords]] property
+  var _FunctionPendingChangeRecords = new WeakMap();
+  
+  var _NotifierPrototype = Object.create(Object.prototype);
+  Object.defineProperty(_NotifierPrototype, "notify", {
+    value: function notifyFunction(changeRecord) {
+      var notifier = Object(this);
+      var target = _NotifierTarget.get(notifier);
+      if (target === undefined) { return undefined; }
+      var changeObservers = _NotifierChangeObservers.get(notifier);
+      if (changeObservers === undefined) { return undefined; }
+      var object = changeRecord.object;
+      if (object !== target) {
+        // Q: not entirely sure what this checks
+        throw new TypeError("change record object does not match notifier target");
+      }
+      var type = changeRecord.type;
+      if (typeof type !== "string") {
+        throw new TypeError("change record type must be a string, given "+type);
+      }
+      var name = changeRecord.name;
+      if (typeof name !== "string") {
+        throw new TypeError("change record name must be a string, given "+name);
+      }
+      // Q: seems like bad practice to freeze someone else's objects
+      // if changeRecord must be frozen, then assert that
+      // alternatively, create our own internal version of the change record
+      // (following the treatment of property descriptors in ES5)
+      Object.freeze(changeRecord);
+      _EnqueueChangeRecord(changeRecord, changeObservers);
+      return undefined;
+    },
+    writable: true,
+    enumerable: false,
+    configurable: false
+  });
+  
+  function _CreateNotifier(target) {
+    var notifier = Object.create(_NotifierPrototype);
+    // target and changeObservers are not regular properties
+    // but hidden [[internal]] properties. We hide them via a WeakMap.
+    _NotifierTarget.set(notifier, target);
+    _NotifierChangeObservers.set(notifier, []);
+    return notifier;
+  };
+  
+  function _EnqueueChangeRecord(changeRecord, changeObservers) {
+    changeObservers.forEach(function (observer) {
+      var pendingRecords = _FunctionPendingChangeRecords.get(observer);
+      // Q: is pendingRecords guaranteed to exist?
+      // is the list of changeObservers guaranteed to point to objects
+      // with this property set?
+      // spec does not perform any checks
+      // FIXME: I added a check since tests otherwise crash
+      if (pendingRecords === undefined) {
+        pendingRecords = [];
+        _FunctionPendingChangeRecords.set(observer, pendingRecords);
+      }
+      pendingRecords.push(changeRecord);
+    });
+  };
+  
+  function _DeliverChangeRecords(callback) {
+    var changeRecords = _FunctionPendingChangeRecords.get(callback) || [];
+    _FunctionPendingChangeRecords.set(callback, []);
+    var array = [];
+    changeRecords.forEach(function (record) {
+      array.push(record);
+    });
+    if (array.length === 0) { return false; }
+    // Q: why suppress the callback's exception?
+    // (A: because _DeliverChangeRecords is called synchronously
+    //     for multiple observers -> if one throws, others won't get
+    //     notified)
+    // => would be cleaner to call every callback in a separate turn
+    //    and let any exception propagate up to the console so we at
+    //    least don't hide exceptions from the user
+    try {
+      callback.call(undefined, array);
+    } catch (e) {
+      // intentionally ignored
+      console.log(e) // at least log the exception
+    }
+    return true;
+  };
+  
+  // embedder will call this internal algorithm when it is time
+  // to deliver the change records.
+  // => in this embedding, done via #deliver button click;
+  window._DeliverAllChangeRecords = function() {
+    var observers = _ObserverCallbacks;
+    var anyWorkDone = false;
+    observers.forEach(function (observer) {
+      // Q: presumably a spec bug: should OR anyWorkDone with
+      // result, not just set it
+      anyWorkDone = _DeliverChangeRecords(observer) || anyWorkDone;
+    });
+    // Q: shouldn't we clear _ObserverCallbacks now?
+    return anyWorkDone;
+  };
+  
+  function _CreateChangeRecord(type, object, name, oldValue) {
+    var changeRecord = {
+      type: type,
+      object: object,
+      name: name,
+      oldValue: oldValue
+    };
+    if (type === "reconfigured") {
+      Object.freeze(oldValue); // oldValue is a property descriptor
+    }
+    return changeRecord;
+  };
+  
+  // == Public API ==
+  
+  // This function is not part of the proposed API!
+  // The point of the proposed API would be that _all_ objects
+  // are by default "observable". In this prototype implementation,
+  // must explicitly create "observable objects".
+  Object.createObservable = function(target) {
+    target = Object(target);
+    var handler = {
+      // FIXME: I added initialization up-front, otherwise tests crash
+      // the spec seems to do lazy intialization of [[Notifier]]
+      notifier: _CreateNotifier(target),
+      // notifier: undefined, // Q: why not just initialize up-front?
+      
+      defineProperty: function(target, name, desc) {
+        // all changes w.r.t. ES5.1 [[DefineOwnProperty]] highlighted
+        // with /*!*/ in the margin
+        var current = Object.getOwnPropertyDescriptor(target, name);
+        var extensible = Object.isExtensible(target);
+ /*!*/  var notifier = this.notifier;
+        // Q: changeObservers can be undefined, spec doesn't check for this
+        // adding intialization myself
+ /*!*/  var changeObservers = _NotifierChangeObservers.get(notifier) || [];
+ /*!*/  var changeType = "descriptor";
+ /*!*/  var changeValue = current;
+        if (current === undefined && extensible === false) {
+          return false;
+        }
+        if (current === undefined && extensible === true) {
+          Object.defineProperty(target, name, desc); // should never fail
+ /*!*/    var r = _CreateChangeRecord("new", target, name, undefined);
+ /*!*/    _EnqueueChangeRecord(r, changeObservers);
+          return true;
+        }
+        if (isEmptyDescriptor(desc)) {
+          return true;
+        }
+        if (isEquivalentDescriptor(current, desc)) {
+          return true;
+        }
+        if (current.configurable === false) {
+          if (desc.configurable === true) {
+            return false;
+          }
+          if ('enumerable' in desc && desc.enumerable !== current.enumerable) {
+            return false;
+          }
+        }
+        if (isGenericDescriptor(desc)) {
+          // no further validation is required
+        } else if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
+          if (current.configurable === false) {
+            return false;
+          }
+        } else if (isDataDescriptor(current) && isDataDescriptor(desc)) {
+          if (current.configurable === false) {
+            if (current.writable === false && desc.writable === true) {
+              return false;
+            }
+            if (current.writable === false) {
+              if ('value' in desc && !sameValue(desc.value, current.value)) {
+                return false;
+              }
+            }
+          }
+ /*!*/    changeType  = "updated";
+ /*!*/    changeValue = current.value;
+        } else if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
+          if (current.configurable === false) {
+            if ('set' in desc && !sameValue(desc.set, current.set)) {
+              return false;
+            }
+            if ('get' in desc && !sameValue(desc.get, current.get)) {
+              return false;
+            }
+          }
+        }
+        Object.defineProperty(target, name, desc); // should never fail
+ /*!*/  var r = _CreateChangeRecord(changeType, target, name, changeValue);
+ /*!*/  _EnqueueChangeRecord(r, changeObservers);
+        return true;
+      },
+      
+      // We want 'set' to default to the above defineProperty algorithm,
+      // the way the spec does. Therefore we bind it to the VirtualHandler
+      // prototype's "set" trap, which implements the "derived" behavior
+      // of "set", falling back to "this.defineProperty" where necessary.
+      set: Reflect.VirtualHandler.prototype.set,
+      // the above "set" method depends on "getOwnPropertyDescriptor",
+      // which we must implement as well:
+      getOwnPropertyDescriptor: Reflect.getOwnPropertyDescriptor,
+      
+      deleteProperty: function(target, name) {
+        var desc = Object.getOwnPropertyDescriptor(target, name);
+        if (desc === undefined) { return true; }
+        var notifier = this.notifier;
+        // Q: notifier could be undefined, shouldn't we initialize?
+        // spec doesn't say, added initialization myself
+        var changeObservers = _NotifierChangeObservers.get(notifier) || [];
+        if (desc.configurable === true) {
+          delete target[name];
+          // FIXME: spec passes the observable object itself as the 
+          // 2nd argument. This implementation passes target rather
+          // than the proxy object itself.
+          var r = _CreateChangeRecord("deleted", target, name, desc);
+          _EnqueueChangeRecord(r, changeObservers);
+          return true;
+        }
+        return false;
+      }
+    };
+    var p = Proxy(target, handler);
+    _Observables.set(p, handler);
+    return p;
+  };
+  
+  function notifierOf(target) {
+    var handler = _Observables.get(target);
+    if (handler === undefined) {
+      throw "can only observe observable objects, given " + target;
+    }
+    // Q: handler.notifier can be undefined, should we initialize it here?
+    // handler.notifier = handler.notifier || _CreateNotifier(target)
+    return handler.notifier;
+  }
+
+  Object.observe = function(target, observer) {
+    target = Object(target);
+    if (typeof observer !== "function") {
+      throw "observer must be a function, given " + observer;
+    }
+    // Q: why this check? because frozen functions can't have
+    // mutable [[PendingChangeRecords]]?
+    if (Object.isFrozen(observer)) {
+      throw "observer can't be frozen";
+    }
+    var notifier = notifierOf(target);
+    // Q: changeObservers can be undefined, spec doesn't check
+    var changeObservers = _NotifierChangeObservers.get(notifier) || [];
+    if (changeObservers.indexOf(observer) !== -1) {
+      return undefined;
+    }
+    changeObservers.push(observer);
+    // Q: spec is implicit about update of [[ChangeObservers]] property
+    _NotifierChangeObservers.set(notifier, changeObservers);
+
+    var observerCallBacks = _ObserverCallbacks;
+    if (observerCallBacks.indexOf(observer) !== -1) {
+      return undefined;
+    }
+    observerCallBacks.push(observer);
+    return undefined;
+  };
+  
+  Object.unobserve = function(target, observer) {
+    target = Object(target);
+    // Q: this check seems redundant, we won't be calling observer
+    if (typeof observer !== "function") {
+      throw "observer must be a function, given " + observer;
+    }
+    var notifier = notifierOf(target);
+    // Q: spec doesn't check for undefined changeObservers
+    // adding check myself
+    var changeObservers = _NotifierChangeObservers.get(notifier);
+    if (changeObservers === undefined) { return undefined; }
+    var index = changeObservers.indexOf(observer);
+    if (index === -1) {
+      return undefined;
+    }
+    changeObservers.splice(index, 1);
+    // Q: shouldn't the observer be removed from _ObserverCallbacks as well?
+    return undefined;
+  };
+  
+  Object.deliverChangeRecords = function(callback) {
+    if (typeof callback !== "function") {
+      throw "callback must be a function, given " + callback;
+    }
+    _DeliverChangeRecords(callback);
+    return undefined;
+  };
+  
+  Object.getNotifier = function(target) {
+    if (Object.isFrozen(target)) {
+      return null;
+    }
+    var handler = _Observables.get(target);
+    if (handler === undefined) {
+      throw "can only get notifier of observables, given " + target;
+    }
+    // Q: shouldn't handler.notifier always exist?
+    // is this just to support lazy loading? If yes, then 
+    // must also load the notifier in Object.{observe,unobserve}
+    // and all other places where it's used in the spec
+    if (handler.notifier === undefined) {
+      handler.notifier = _CreateNotifier(target);
+    }
+    return handler.notifier;
+  };
+  
+}());
+
+// == Auxiliary functions ==
+
+function deliver() {
+  // called in a separate turn
+  window._DeliverAllChangeRecords();
+}
+
+function assert(bool, msg) {
+  var div = $("<div/>")
+    .css('color', bool ? 'green' : 'red')
+    .text(msg);
+  $("#output").append(div);
+}
+
+// == Unit tests and page set-up ==
+
+$(document).ready(function () {
+  $('#deliver').click(deliver);
+  
+  var observableTarget = {};
+  
+  // Tests below taken from
+  // http://wiki.ecmascript.org/doku.php?id=strawman:observe
+  
+  function observer(records) {
+    var record;
+    console.log(records);
+
+    assert(records.length === 6, "expected 6 changes");
+    
+    /*{
+      "type": "new",
+      "object": o,
+      "name": "x"
+    },*/
+    record = records[0];
+    assert(record.type === "new", "0: type");
+    assert(record.object === observableTarget, "0: target");
+    assert(record.name === "x", "0: name");
+    
+    /*{
+      "type": "updated",
+      "object": o,
+      "name": "x",
+      "oldValue": 1
+    },*/
+    record = records[1];
+    assert(record.type === "updated", "1: type");
+    assert(record.object === observableTarget, "1: target");
+    assert(record.name === "x", "1: name");
+    assert(record.oldValue === 1, "1: oldValue");
+    
+    /*{
+      "type": "new"
+      "object": o,
+      "name": "y"
+    },*/
+    record = records[2];
+    assert(record.type === "new", "2: type");
+    assert(record.object === observableTarget, "2: target");
+    assert(record.name === "y", "2: name");
+    
+    /*{
+      "type": "reconfigured",
+      "object": o,
+      "name": "x",
+      "oldValue": {
+        "configurable": true,
+        "enumerable": true,
+        "value": 3,
+        "writable": true
+      }
+    },*/
+    record = records[3];
+    // Q: strawman page says type should be "reconfigured" but
+    // the type "reconfigured" is never specified
+    // Current implementation returns type="descriptor"
+    assert(record.type === "reconfigured", "3: type");
+    assert(record.object === observableTarget, "3: target");
+    assert(record.name === "x", "3: name");
+    assert(record.oldValue.configurable === true, "3: oldValue.configurable");
+    assert(record.oldValue.enumerable === true, "3: oldValue.enumerable");
+    assert(record.oldValue.value === 3, "3: oldValue.value");
+    assert(record.oldValue.writable === true, "3: oldValue.writable");
+    
+    /*{
+      "type": "new",
+      "object": o,
+      "name": "toString"
+    },*/
+    record = records[4];
+    assert(record.type === "new", "4: type");
+    assert(record.object === observableTarget, "4: target");
+    assert(record.name === "toString", "4: name");
+    
+    /*{
+      "type": "deleted",
+      "object": o,
+      "name": "x"
+      // "oldValue" will only be present if the deleted property was a data property.
+    }*/
+    record = records[5];
+    assert(record.type === "deleted", "5: type");
+    assert(record.object === observableTarget, "5: target");
+    assert(record.name === "x", "5: name");
+  }
+
+  var o = Object.createObservable(observableTarget);
+  var o2 = {}
+  Object.observe(o, observer);
+
+  o.x = 1;
+  o2.x = 2; // doesn't notify
+  o.x = 3;
+  o.y = 4;
+  var tmp = 5;
+  Object.defineProperty(o, "x",
+    { get: function () { return tmp; },
+      set: function (v) { tmp = v; },
+      // FIXME: added due to bug in Firefox that auto-completes descriptors
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
+      configurable: true,
+      enumerable: true });
+  o.x = 6; // Doesn't notify
+  o.toString = 7;
+  delete o.x;
+  Object.unobserve(o, observer);
+  o.y = 8; // Doesn't notify
+  
+  assert(true, "tests done, press button to get notifications");
+  
+});
+</script>
+
+<body>
+  <button id="deliver">Click to deliver all pending change records</button>
+  <div id="output"></div>
+</body>
+</html>
