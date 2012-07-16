@@ -133,7 +133,6 @@
       if (changeObservers === undefined) { return undefined; }
       var object = changeRecord.object;
       if (object !== target) {
-        // Q: not entirely sure what this checks
         throw new TypeError("change record object does not match notifier target");
       }
       var type = changeRecord.type;
@@ -365,8 +364,8 @@
     if (typeof observer !== "function") {
       throw "observer must be a function, given " + observer;
     }
-    // Q: why this check? because frozen functions can't have
-    // mutable [[PendingChangeRecords]]?
+    // Q: why this check? A: probably because frozen functions can't have
+    // mutable [[PendingChangeRecords]]
     if (Object.isFrozen(observer)) {
       throw "observer can't be frozen";
     }
