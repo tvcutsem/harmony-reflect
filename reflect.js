@@ -1304,17 +1304,12 @@ var Reflect = global.Reflect = {
       }
     }
     if (isGenericDescriptor(desc)) {
-      Object.defineProperty(target, name, desc); // should never fail
-      return true;
-    }
-    if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
+      // no further validation necessary
+    } else if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
       if (current.configurable === false) {
         return false;
       }
-      Object.defineProperty(target, name, desc); // should never fail
-      return true;
-    }
-    if (isDataDescriptor(current) && isDataDescriptor(desc)) {
+    } else if (isDataDescriptor(current) && isDataDescriptor(desc)) {
       if (current.configurable === false) {
         if (current.writable === false && desc.writable === true) {
           return false;
@@ -1325,10 +1320,7 @@ var Reflect = global.Reflect = {
           }
         }
       }
-      Object.defineProperty(target, name, desc); // should never fail
-      return true;
-    }
-    if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
+    } else if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
       if (current.configurable === false) {
         if ('set' in desc && !sameValue(desc.set, current.set)) {
           return false;
