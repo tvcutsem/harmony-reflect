@@ -173,10 +173,8 @@
     changeObservers.forEach(function (observer) {
       var pendingRecords = _FunctionPendingChangeRecords.get(observer);
       // Q: is pendingRecords guaranteed to exist?
-      // is the list of changeObservers guaranteed to point to objects
-      // with this property set?
-      // spec does not perform any checks
-      // FIXME: I added a check since tests otherwise crash
+      // A: yes, it is defined to be intially empty
+      // In this implementation, lazily intialize it
       if (pendingRecords === undefined) {
         pendingRecords = [];
         _FunctionPendingChangeRecords.set(observer, pendingRecords);
