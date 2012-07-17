@@ -105,6 +105,8 @@
   
   // == Implementation of observe strawman starts here ==
   
+  // names starting with a leading underscore (_)
+  // correspond to spec-internal [[methods]]/[[properties]]
 
   // implementation-artefact to identify Observable objects
   // this is irrelevant for the actual strawman
@@ -126,7 +128,9 @@
   var _NotifierPrototype = Object.create(Object.prototype);
   Object.defineProperty(_NotifierPrototype, "notify", {
     value: function notifyFunction(changeRecord) {
-      var notifier = Object(this);
+      if (Object(this) !== this) {
+        throw new TypeError("this must be an Object, given "+this);
+      }
       var target = _NotifierTarget.get(notifier);
       if (target === undefined) { return undefined; }
       var changeObservers = _NotifierChangeObservers.get(notifier);
@@ -240,7 +244,9 @@
   // are by default "observable". In this prototype implementation,
   // must explicitly create "observable objects".
   Object.createObservable = function(target) {
-    target = Object(target);
+    if (Object(target) !== target) {
+      throw new TypeError("target must be an Object, given "+target);
+    }
     var proxy;
     var handler = {
       // Q: why not just initialize up-front?
@@ -360,7 +366,9 @@
   }
 
   Object.observe = function(target, observer) {
-    target = Object(target);
+    if (Object(target) !== target) {
+      throw new TypeError("target must be an Object, given "+target);
+    }
     if (typeof observer !== "function") {
       throw "observer must be a function, given " + observer;
     }
@@ -386,7 +394,9 @@
   };
   
   Object.unobserve = function(target, observer) {
-    target = Object(target);
+    if (Object(target) !== target) {
+      throw new TypeError("target must be an Object, given "+target);
+    }
     var notifier = _GetNotifier(target);
     var changeObservers = _NotifierChangeObservers.get(notifier);
     var index = changeObservers.indexOf(observer);
@@ -409,6 +419,9 @@
   };
   
   Object.getNotifier = function(target) {
+    if (Object(target) !== target) {
+      throw new TypeError("target must be an Object, given "+target);
+    }
     if (Object.isFrozen(target)) {
       return null;
     }
