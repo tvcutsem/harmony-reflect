@@ -118,7 +118,7 @@
   
   // stores a Notifier object's [[Target]] property
   var _NotifierTarget          = new WeakMap();
-  // stores a Notifier object's [[Target]] property
+  // stores a Notifier object's [[ChangeObservers]] property
   var _NotifierChangeObservers = new WeakMap();
   // stores a Function object's [[PendingChangeRecords]] property
   var _FunctionPendingChangeRecords = new WeakMap();
@@ -212,11 +212,11 @@
     var observers = _ObserverCallbacks;
     var anyWorkDone = false;
     observers.forEach(function (observer) {
-      // Q: presumably a spec bug: should OR anyWorkDone with
-      // result, not just set it
       anyWorkDone = _DeliverChangeRecords(observer) || anyWorkDone;
     });
     // Q: shouldn't we clear _ObserverCallbacks now?
+    // A: no, conceptually the list is never cleared to maintain
+    // a consistent ordering
     return anyWorkDone;
   };
   
@@ -241,28 +241,28 @@
   // must explicitly create "observable objects".
   Object.createObservable = function(target) {
     target = Object(target);
+    var proxy;
     var handler = {
-      // FIXME: I added initialization up-front, otherwise tests crash
-      // the spec seems to do lazy intialization of [[Notifier]]
-      notifier: _CreateNotifier(target),
-      // notifier: undefined, // Q: why not just initialize up-front?
+      // Q: why not just initialize up-front?
+      // A: to avoid recursion in the spec language
+      notifier: undefined,
       
       defineProperty: function(target, name, desc) {
         // all changes w.r.t. ES5.1 [[DefineOwnProperty]] highlighted
         // with /*!*/ in the margin
         var current = Object.getOwnPropertyDescriptor(target, name);
         var extensible = Object.isExtensible(target);
- /*!*/  var notifier = this.notifier;
-        // Q: changeObservers can be undefined, spec doesn't check for this
-        // adding intialization myself
- /*!*/  var changeObservers = _NotifierChangeObservers.get(notifier) || [];
- /*!*/  var changeType = "descriptor";
+ /*!*/  var notifier = _GetNotifier(proxy);
+ /*!*/  var changeObservers = _NotifierChangeObservers.get(notifier);
+ /*!*/  var changeType = "reconfigured";
  /*!*/  var changeValue = current;
         if (current === undefined && extensible === false) {
           return false;
         }
         if (current === undefined && extensible === true) {
           Object.defineProperty(target, name, desc); // should never fail
+          // FIXME: should pass "proxy" as second argument, passing
+          // "target" instead to avoid recursion.
  /*!*/    var r = _CreateChangeRecord("new", target, name, undefined);
  /*!*/    _EnqueueChangeRecord(r, changeObservers);
           return true;
@@ -311,6 +311,8 @@
           }
         }
         Object.defineProperty(target, name, desc); // should never fail
+        // FIXME: should pass "proxy" as second argument, passing
+        // "target" instead to avoid recursion.
  /*!*/  var r = _CreateChangeRecord(changeType, target, name, changeValue);
  /*!*/  _EnqueueChangeRecord(r, changeObservers);
         return true;
@@ -328,15 +330,12 @@
       deleteProperty: function(target, name) {
         var desc = Object.getOwnPropertyDescriptor(target, name);
         if (desc === undefined) { return true; }
-        var notifier = this.notifier;
-        // Q: notifier could be undefined, shouldn't we initialize?
-        // spec doesn't say, added initialization myself
-        var changeObservers = _NotifierChangeObservers.get(notifier) || [];
+        var notifier = _GetNotifier(proxy);
+        var changeObservers = _NotifierChangeObservers.get(notifier);
         if (desc.configurable === true) {
           delete target[name];
-          // FIXME: spec passes the observable object itself as the 
-          // 2nd argument. This implementation passes target rather
-          // than the proxy object itself.
+          // FIXME: should pass "proxy" as second argument, passing
+          // "target" instead to avoid recursion.
           var r = _CreateChangeRecord("deleted", target, name, desc);
           _EnqueueChangeRecord(r, changeObservers);
           return true;
@@ -344,18 +343,19 @@
         return false;
       }
     };
-    var p = Proxy(target, handler);
-    _Observables.set(p, handler);
-    return p;
+    proxy = Proxy(target, handler);
+    _Observables.set(proxy, handler);
+    return proxy;
   };
   
-  function notifierOf(target) {
+  function _GetNotifier(target) {
     var handler = _Observables.get(target);
     if (handler === undefined) {
-      throw "can only observe observable objects, given " + target;
+      throw "can only get notifier of observable objects, given " + target;
     }
-    // Q: handler.notifier can be undefined, should we initialize it here?
-    // handler.notifier = handler.notifier || _CreateNotifier(target)
+    if (handler.notifier === undefined) {
+      handler.notifier = _CreateNotifier(target)      
+    }
     return handler.notifier;
   }
 
@@ -364,20 +364,18 @@
     if (typeof observer !== "function") {
       throw "observer must be a function, given " + observer;
     }
-    // Q: why this check? A: probably because frozen functions can't have
+    // Q: why this check?
+    // A: probably because frozen functions can't have
     // mutable [[PendingChangeRecords]]
     if (Object.isFrozen(observer)) {
       throw "observer can't be frozen";
     }
-    var notifier = notifierOf(target);
-    // Q: changeObservers can be undefined, spec doesn't check
-    var changeObservers = _NotifierChangeObservers.get(notifier) || [];
+    var notifier = _GetNotifier(target);
+    var changeObservers = _NotifierChangeObservers.get(notifier);
     if (changeObservers.indexOf(observer) !== -1) {
       return undefined;
     }
     changeObservers.push(observer);
-    // Q: spec is implicit about update of [[ChangeObservers]] property
-    _NotifierChangeObservers.set(notifier, changeObservers);
 
     var observerCallBacks = _ObserverCallbacks;
     if (observerCallBacks.indexOf(observer) !== -1) {
@@ -389,21 +387,16 @@
   
   Object.unobserve = function(target, observer) {
     target = Object(target);
-    // Q: this check seems redundant, we won't be calling observer
-    if (typeof observer !== "function") {
-      throw "observer must be a function, given " + observer;
-    }
-    var notifier = notifierOf(target);
-    // Q: spec doesn't check for undefined changeObservers
-    // adding check myself
+    var notifier = _GetNotifier(target);
     var changeObservers = _NotifierChangeObservers.get(notifier);
-    if (changeObservers === undefined) { return undefined; }
     var index = changeObservers.indexOf(observer);
     if (index === -1) {
       return undefined;
     }
     changeObservers.splice(index, 1);
     // Q: shouldn't the observer be removed from _ObserverCallbacks as well?
+    // A: no, _ObserverCallbacks is conceptually never cleared to maintain
+    // a consistent ordering among callbacks
     return undefined;
   };
   
@@ -419,18 +412,7 @@
     if (Object.isFrozen(target)) {
       return null;
     }
-    var handler = _Observables.get(target);
-    if (handler === undefined) {
-      throw "can only get notifier of observables, given " + target;
-    }
-    // Q: shouldn't handler.notifier always exist?
-    // is this just to support lazy loading? If yes, then 
-    // must also load the notifier in Object.{observe,unobserve}
-    // and all other places where it's used in the spec
-    if (handler.notifier === undefined) {
-      handler.notifier = _CreateNotifier(target);
-    }
-    return handler.notifier;
+    return _GetNotifier(target);
   };
   
 }());
@@ -509,9 +491,6 @@ $(document).ready(function () {
       }
     },*/
     record = records[3];
-    // Q: strawman page says type should be "reconfigured" but
-    // the type "reconfigured" is never specified
-    // Current implementation returns type="descriptor"
     assert(record.type === "reconfigured", "3: type");
     assert(record.object === observableTarget, "3: target");
     assert(record.name === "x", "3: name");
