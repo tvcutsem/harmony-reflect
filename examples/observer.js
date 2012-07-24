@@ -139,6 +139,7 @@ Observer = function Observer(Object) {
       if (typeof type !== "string") {
         throw new TypeError("change record type must be a string, given "+type);
       }
+      // Q: checking typeof name seems to be removed in latest draft?
       var name = changeRecord.name;
       if (typeof name !== "string") {
         throw new TypeError("change record name must be a string, given "+name);
@@ -298,8 +299,14 @@ Observer = function Observer(Object) {
               }
             }
           }
- /*!*/    changeType  = "updated";
- /*!*/    changeValue = current.value;
+          // Q: spec says: if all of these are absent
+          // I would want: if all of these are absent or unchanged
+          // reason: if the attributes are the same, no actual reconfiguration
+ /*!*/    if (!('writable' in desc) || sameValue(desc.writable, current.writable) &&
+ /*!*/        !('enumerable' in desc) || sameValue(desc.enumerable, current.enumerable) &&
+ /*!*/        !('configurable' in desc) || sameValue(desc.configurable, current.configurable)) {
+ /*!*/      changeType = "updated";                
+ /*!*/    }
         } else if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
           if (current.configurable === false) {
             if ('set' in desc && !sameValue(desc.set, current.set)) {
@@ -313,7 +320,7 @@ Observer = function Observer(Object) {
         Object.defineProperty(target, name, desc); // should never fail
         // FIXME: should pass "proxy" as second argument, passing
         // "target" instead to avoid recursion.
- /*!*/  var r = _CreateChangeRecord(changeType, target, name, changeValue);
+ /*!*/  var r = _CreateChangeRecord(changeType, target, name, current);
  /*!*/  _EnqueueChangeRecord(r, changeObservers);
         return true;
       },

@@ -53,7 +53,10 @@
 	<title>Observer Example</title>
 </head>
 <script src="https://raw.github.com/tvcutsem/harmony-reflect/master/reflect.js"></script> 
-<script src="https://raw.github.com/tvcutsem/harmony-reflect/master/examples/observer.js"></script> 
+<!-- 
+<script src="https://raw.github.com/tvcutsem/harmony-reflect/master/examples/observer.js"></script>
+-->
+<script src="observer.js"></script> 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>
 <script>
 // Observer module is a function that takes a global Object on which to install
@@ -120,23 +123,13 @@ $(document).ready(function () {
     /*{
       "type": "reconfigured",
       "object": o,
-      "name": "x",
-      "oldValue": {
-        "configurable": true,
-        "enumerable": true,
-        "value": 3,
-        "writable": true
-      }
+      "name": "x"
     },*/
     record = records[3];
     assert(record.type === "reconfigured", "3: type");
     assert(record.object === observableTarget, "3: target");
     assert(record.name === "x", "3: name");
-    assert(record.oldValue.configurable === true, "3: oldValue.configurable");
-    assert(record.oldValue.enumerable === true, "3: oldValue.enumerable");
-    assert(record.oldValue.value === 3, "3: oldValue.value");
-    assert(record.oldValue.writable === true, "3: oldValue.writable");
-    
+        
     /*{
       "type": "new",
       "object": o,
