@@ -143,7 +143,7 @@ Observer = function Observer(Object) {
       if (typeof name !== "string") {
         throw new TypeError("change record name must be a string, given "+name);
       }
-      var newRecord = Object.create(Object.prototye);
+      var newRecord = Object.create(Object.prototype);
       for (var propName in newRecord) {
         newRecord[propName] = changeRecord[propName];
       }
