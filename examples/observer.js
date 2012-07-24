@@ -143,12 +143,13 @@ Observer = function Observer(Object) {
       if (typeof name !== "string") {
         throw new TypeError("change record name must be a string, given "+name);
       }
-      // Q: seems like bad practice to freeze someone else's objects
-      // if changeRecord must be frozen, then assert that
-      // alternatively, create our own internal version of the change record
-      // (following the treatment of property descriptors in ES5)
-      Object.freeze(changeRecord);
-      _EnqueueChangeRecord(changeRecord, changeObservers);
+      var newRecord = Object.create(Object.prototye);
+      for (var propName in newRecord) {
+        newRecord[propName] = changeRecord[propName];
+      }
+      // Q: perhaps no longer necessary -> newRecord doesn't leak
+      Object.preventExtensions(newRecord);
+      _EnqueueChangeRecord(newRecord, changeObservers);
       return undefined;
     },
     writable: true,
@@ -218,15 +219,14 @@ Observer = function Observer(Object) {
     return anyWorkDone;
   };
   
-  function _CreateChangeRecord(type, object, name, oldValue) {
+  function _CreateChangeRecord(type, object, name, desc) {
     var changeRecord = {
       type: type,
       object: object,
-      name: name,
-      oldValue: oldValue
+      name: name
     };
-    if (type === "reconfigured") {
-      Object.freeze(oldValue); // oldValue is a property descriptor
+    if (isDataDescriptor(desc)) {
+      changeRecord.oldValue = desc.value;
     }
     return changeRecord;
   };
