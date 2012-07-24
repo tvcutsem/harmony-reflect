@@ -124,6 +124,7 @@ Observer = function Observer(Object) {
   var _NotifierPrototype = Object.create(Object.prototype);
   Object.defineProperty(_NotifierPrototype, "notify", {
     value: function notifyFunction(changeRecord) {
+      var notifier = this;
       if (Object(this) !== this) {
         throw new TypeError("this must be an Object, given "+this);
       }
@@ -131,6 +132,8 @@ Observer = function Observer(Object) {
       if (target === undefined) { return undefined; }
       var changeObservers = _NotifierChangeObservers.get(notifier);
       if (changeObservers === undefined) { return undefined; }
+      // Q: should the changeRecord really define an 'object' prop?
+      // Can't the notifier tack it on automatically?
       var object = changeRecord.object;
       if (object !== target) {
         throw new TypeError("change record object does not match notifier target");
