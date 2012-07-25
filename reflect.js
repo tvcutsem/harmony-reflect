@@ -1539,10 +1539,13 @@ VirtualHandler.prototype = {
         var name = props[i];
         var desc = this.getOwnPropertyDescriptor(target,name);
         desc = normalizeAndCompletePropertyDescriptor(desc);
-        if (desc !== undefined && 'value' in desc) {
+        if (isDataDescriptor(desc)) {
           success = success &&
             this.defineProperty(target,name,{writable:false,
                                              configurable:false});
+        } else if (desc !== undefined) {
+          success = success &&
+            this.defineProperty(target,name,{configurable:false});          
         }
       }
     }
