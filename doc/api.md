@@ -158,28 +158,28 @@ Prevents extensions to the object as if by calling `Object.preventExtensions(tar
 
 If `target` is a proxy, calls that proxy's `preventExtensions` trap.
 
-## Reflect.VirtualHandler()
+## Reflect.Handler()
 
 Constructor function whose prototype represents a proxy handler that readily implements all "derived" traps.
 
-Use `VirtualHandler` if you want to implement just the bare minimum number of traps, inheriting sensible default operations for all the other traps.
+Use `Handler` if you want to implement just the bare minimum number of traps (the "fundamental" traps), inheriting sensible default operations for all the other traps (the "derived" traps).
 
-The intent is for users to "subclass" `VirtualHandler` and override the "fundamental" trap methods, like so:
+The intent is for users to "subclass" `Handler` and override the "fundamental" trap methods, like so:
 
     // the "subclass" constructor function
     function MyHandler(){};
-    // set its prototype to an object inheriting from VirtualHandler.prototype
-    MyHandler.prototype = Object.create(Reflect.VirtualHandler.prototype);
-    // now override just the following traps:
-    MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {};
-    MyHandler.prototype.getOwnPropertyNames = function(tgt) {};
-    MyHandler.prototype.defineProperty = function(tgt,name,desc) {};
-    MyHandler.prototype.deleteProperty = function(tgt,name) {};
-    MyHandler.prototype.preventExtensions = function(tgt) {};
-    MyHandler.prototype.apply = function(tgt,rcvr,args) {};
+    // set its prototype to an object inheriting from Handler.prototype
+    MyHandler.prototype = new Reflect.Handler();
+    // now override just some of the following "fundamental" traps:
+    MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {...};
+    MyHandler.prototype.getOwnPropertyNames = function(tgt) {...};
+    MyHandler.prototype.defineProperty = function(tgt,name,desc) {...};
+    MyHandler.prototype.deleteProperty = function(tgt,name) {...};
+    MyHandler.prototype.preventExtensions = function(tgt) {...};
+    MyHandler.prototype.apply = function(tgt,rcvr,args) {...};
     
     var proxy = Proxy(target, new MyHandler());
 
-A "derived" operation such as `name in proxy` will trigger the proxy's `has` trap, which is inherited from `VirtualHandler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
+A "derived" operation such as `name in proxy` will trigger the proxy's `has` trap, which is inherited from `Handler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
 
 [More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)

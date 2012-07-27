@@ -1195,7 +1195,7 @@ Object.freeze = function(subject) {
   var vHandler = directProxies.get(subject);
   if (vHandler !== undefined) {
     if (vHandler.freeze()) {
-      return subject; 
+      return subject;
     } else {
       throw new TypeError("freeze on "+subject+" rejected");
     }
@@ -1492,27 +1492,26 @@ var Reflect = global.Reflect = {
   }
 };
 
-// ============= Virtual Object API =============
+// ============= Handler API =============
 // see http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
 
-function abstract(name) {
-  return function() {
-    throw new TypeError("Missing fundamental trap: "+name);
+function forward(name) {
+  return function(/*...args*/) {
+    var args = Array.prototype.slice.call(arguments);
+    return Reflect[name].apply(this, args);
   };
 }
 
-// TODO: consider defining VirtualHandler as a singleton object,
-// instead of as a constructor function. It is a stateless abstraction.
-function VirtualHandler() { };
-global.Reflect.VirtualHandler = VirtualHandler;
-VirtualHandler.prototype = {
+function Handler() { };
+global.Reflect.Handler = Handler;
+Handler.prototype = {
   // fundamental traps
-  getOwnPropertyDescriptor: abstract("getOwnPropertyDescriptor"),
-  getOwnPropertyNames:      abstract("getOwnPropertyNames"),
-  defineProperty:           abstract("defineProperty"),
-  deleteProperty:           abstract("deleteProperty"),
-  preventExtensions:        abstract("preventExtensions"),
-  apply:                    abstract("apply"),
+  getOwnPropertyDescriptor: forward("getOwnPropertyDescriptor"),
+  getOwnPropertyNames:      forward("getOwnPropertyNames"),
+  defineProperty:           forward("defineProperty"),
+  deleteProperty:           forward("deleteProperty"),
+  preventExtensions:        forward("preventExtensions"),
+  apply:                    forward("apply"),
  
   // derived traps
   seal: function(target) {

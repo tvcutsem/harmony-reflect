@@ -246,12 +246,21 @@ Observer = function Observer(Object) {
       throw new TypeError("target must be an Object, given "+target);
     }
     var proxy;
-    var handler = {
-      // Q: why not just initialize up-front?
-      // A: to avoid recursion in the spec language
-      notifier: undefined,
-      
-      defineProperty: function(target, name, desc) {
+    
+    // We want other traps, like 'set', to default to the custom
+    // defineProperty algorithm specified below.
+    // Therefore, our observable proxy handler just inherits from
+    // Reflect.Handler, which implements the "derived" behavior
+    // of "set", falling back to "this.defineProperty" where necessary
+    // Additionally, when e.g. calling Object.freeze(observableProxy),
+    // the inherited 'freeze' trap will invoke the defineProperty algorithm
+    // for every reconfigured property, so when an object is frozen,
+    // its observers get notified of the reconfigurations this entails.
+    var handler = new Reflect.Handler();
+    
+    handler.notifier = undefined;
+    
+    handler.defineProperty = function(target, name, desc) {
         // all changes w.r.t. ES5.1 [[DefineOwnProperty]] highlighted
         // with /*!*/ in the margin
         var current = Object.getOwnPropertyDescriptor(target, name);
@@ -326,33 +335,24 @@ Observer = function Observer(Object) {
  /*!*/  var r = _CreateChangeRecord(changeType, target, name, current);
  /*!*/  _EnqueueChangeRecord(r, changeObservers);
         return true;
-      },
-      
-      // We want 'set' to default to the above defineProperty algorithm,
-      // the way the spec does. Therefore we bind it to the VirtualHandler
-      // prototype's "set" trap, which implements the "derived" behavior
-      // of "set", falling back to "this.defineProperty" where necessary.
-      set: Reflect.VirtualHandler.prototype.set,
-      // the above "set" method depends on "getOwnPropertyDescriptor",
-      // which we must implement as well:
-      getOwnPropertyDescriptor: Reflect.getOwnPropertyDescriptor,
-      
-      deleteProperty: function(target, name) {
-        var desc = Object.getOwnPropertyDescriptor(target, name);
-        if (desc === undefined) { return true; }
-        var notifier = _GetNotifier(proxy);
-        var changeObservers = _NotifierChangeObservers.get(notifier);
-        if (desc.configurable === true) {
-          delete target[name];
-          // FIXME: should pass "proxy" as second argument, passing
-          // "target" instead to avoid recursion.
-          var r = _CreateChangeRecord("deleted", target, name, desc);
-          _EnqueueChangeRecord(r, changeObservers);
-          return true;
-        }
-        return false;
-      }
     };
+            
+    handler.deleteProperty = function(target, name) {
+      var desc = Object.getOwnPropertyDescriptor(target, name);
+      if (desc === undefined) { return true; }
+      var notifier = _GetNotifier(proxy);
+      var changeObservers = _NotifierChangeObservers.get(notifier);
+      if (desc.configurable === true) {
+        delete target[name];
+        // FIXME: should pass "proxy" as second argument, passing
+        // "target" instead to avoid recursion.
+        var r = _CreateChangeRecord("deleted", target, name, desc);
+        _EnqueueChangeRecord(r, changeObservers);
+        return true;
+      }
+      return false;
+    };
+      
     proxy = Proxy(target, handler);
     _Observables.set(proxy, handler);
     return proxy;
