@@ -104,6 +104,13 @@ Returns an array of strings representing the `target` object's "own" (i.e. not i
 Same as the ES5 built-in Object.getOwnPropertyNames(target).
 If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
 
+## Reflect.getPrototypeOf(target)
+
+Returns the prototype link of the `target` object.
+
+Same as the ES5 built-in Object.getPrototypeOf(target).
+If `target` is a proxy, calls that proxy's `getPrototypeOf` trap.
+
 ## Reflect.deleteProperty(target, name)
 
 Attempts to delete the `name` property on `target`. Calling this function is equivalent to performing `delete target[name]`, except that this function returns a boolean that indicates whether or not the deletion was successful.
@@ -158,6 +165,24 @@ Prevents extensions to the object as if by calling `Object.preventExtensions(tar
 
 If `target` is a proxy, calls that proxy's `preventExtensions` trap.
 
+## Reflect.isFrozen(target)
+
+Returns a boolean indicating whether `target` is frozen as if by calling `Object.isFrozen(target)`.
+
+If `target` is a proxy, calls that proxy's `isFrozen` trap.
+
+## Reflect.isSealed(target)
+
+Returns a boolean indicating whether `target` is sealed as if by calling `Object.isSealed(target)`.
+
+If `target` is a proxy, calls that proxy's `isSealed` trap.
+
+## Reflect.isExtensible(target)
+
+Returns a boolean indicating whether `target` is extensible as if by calling `Object.isExtensible(target)`.
+
+If `target` is a proxy, calls that proxy's `isExtensible` trap.
+
 ## Reflect.Handler()
 
 Constructor function whose prototype represents a proxy handler that readily implements all "derived" traps.
@@ -168,18 +193,23 @@ The intent is for users to "subclass" `Handler` and override the "fundamental" t
 
     // the "subclass" constructor function
     function MyHandler(){};
+    
     // set its prototype to an object inheriting from Handler.prototype
     MyHandler.prototype = new Reflect.Handler();
-    // now override just some of the following "fundamental" traps:
-    MyHandler.prototype.getOwnPropertyDescriptor = function(tgt, name) {...};
-    MyHandler.prototype.getOwnPropertyNames = function(tgt) {...};
-    MyHandler.prototype.defineProperty = function(tgt,name,desc) {...};
-    MyHandler.prototype.deleteProperty = function(tgt,name) {...};
-    MyHandler.prototype.preventExtensions = function(tgt) {...};
-    MyHandler.prototype.apply = function(tgt,rcvr,args) {...};
     
+    // now override one or more "fundamental" traps, e.g.:
+    MyHandler.prototype.defineProperty = function(tgt,name,desc) {...};
+    
+    // create a proxy with an instance of the Handler "subclass"
     var proxy = Proxy(target, new MyHandler());
+    
+    // MyHandler's inherited "set" trap will call the overridden "defineProperty" trap
+    proxy.foo = 42;
 
 A "derived" operation such as `name in proxy` will trigger the proxy's `has` trap, which is inherited from `Handler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
+
+The following `Handler` traps are regarded as "fundamental", and by default forward to the target object: getOwnPropertyDescriptor, getOwnPropertyNames, getPrototypeOf, defineProperty, deleteProperty, preventExtensions, isExtensible, apply.
+
+All other traps are "derived", and default to one or more of the above "fundamental" traps: get, set, has, hasOwn, keys, enumerate, iterate, seal, freeze, isSealed, isFrozen, construct.
 
 [More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)

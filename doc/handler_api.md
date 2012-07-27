@@ -183,7 +183,23 @@ The proxy throws a TypeError if:
 
   *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
   *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
+  
+## getPrototypeOf(target)
 
+Called when the proxy is queried for its prototype link.
+This trap should return the prototype link of the target object.
+
+This trap intercepts the following operations:
+
+  *  `Object.getPrototypeOf(proxy)`
+  *  `Reflect.getPrototypeOf(proxy)`
+  *  `Object.prototype.isPrototypeOf.call({}, proxy)`
+  *  In full ES6 proxies, it is the intent that this trap is also triggered for `proxy instanceof Function`. This shim does not currently intercept that operation.
+
+The proxy throws a TypeError if:
+
+  *  The return value of the trap is not the actual prototype link of the wrapped target object. This restriction is imposed to ensure that `getPrototypeOf` cannot by itself be used to introduce a mutable prototype link.
+  
 ## deleteProperty(target, name)
 
 Called when a property is deleted on the proxy.
@@ -259,3 +275,45 @@ This trap intercepts the following operations:
 
   *  `Object.preventExtensions(proxy)`
   *  `Reflect.preventExtensions(proxy)`
+  
+## isFrozen(target)
+
+Called when the proxy is queried for its frozen state.
+This trap should return a boolean indicating whether the proxy is frozen.
+
+This trap intercepts the following operations:
+
+  *  `Object.isFrozen(proxy)`
+  *  `Reflect.isFrozen(proxy)`
+  
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the frozen state of the proxy's target object.
+
+## isSealed(target)
+
+Called when the proxy is queried for its sealed state.
+This trap should return a boolean indicating whether the proxy is sealed.
+
+This trap intercepts the following operations:
+
+  *  `Object.isSealed(proxy)`
+  *  `Reflect.isSealed(proxy)`
+  
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the sealed state of the proxy's target object.
+
+## isExtensible(target)
+
+Called when the proxy is queried for its extensibility state.
+This trap should return a boolean indicating whether the proxy is extensible.
+
+This trap intercepts the following operations:
+
+  *  `Object.isExtensible(proxy)`
+  *  `Reflect.isExtensible(proxy)`
+  
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the extensibility state of the proxy's target object.
