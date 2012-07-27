@@ -333,13 +333,19 @@ function normalizePropertyDescriptor(attributes) {
 }
 
 // store a reference to the real ES5 primitives before patching them later
-var prim_preventExtensions = Object.preventExtensions,
-    prim_seal = Object.seal,
-    prim_freeze = Object.freeze,
+var prim_preventExtensions =        Object.preventExtensions,
+    prim_seal =                     Object.seal,
+    prim_freeze =                   Object.freeze,
+    prim_isExtensible =             Object.isExtensible,
+    prim_isSealed =                 Object.isSealed,
+    prim_isFrozen =                 Object.isFrozen,
+    prim_getPrototypeOf =           Object.getPrototypeOf,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
 
-// these will point to the patched versions
-var Object_isFrozen, Object_isSealed, Object_isExtensible;
+// these will point to the patched versions of the respective methods on
+// Object. They are used within this module as the "intrinsic" bindings
+// of these methods (i.e. the "original" bindings as defined in the spec)
+var Object_isFrozen, Object_isSealed, Object_isExtensible, Object_getPrototypeOf;
 
 /**
  * A property 'name' is fixed if it is an own property of the target.
@@ -788,6 +794,50 @@ Validator.prototype = {
   },
   
   /**
+   * Checks whether the trap result is consistent with the state of the
+   * wrapped target.
+   */
+  isExtensible: function() {
+    var trap = this.getTrap("isExtensible");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.isExtensible(this.target);
+    }
+
+    var result = trap(this.target);
+    result = !!result; // coerce to Boolean
+    var state = Object_isExtensible(this.target);
+    if (result !== state) {
+      if (result) {
+        throw new TypeError("cannot report non-extensible object as extensible: "+
+                             this.target);
+      } else {
+        throw new TypeError("cannot report extensible object as non-extensible: "+
+                             this.target);
+      }
+    }
+    return state;
+  },
+  
+  /**
+   * Check whether the trap result corresponds to the target's [[Prototype]]
+   */
+  getPrototypeOf: function() {
+    var trap = this.getTrap("getPrototypeOf");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.getPrototypeOf(this.target);
+    }
+
+    var allegedProto = trap(this.target);
+    var actualProto = Object_getPrototypeOf(this.target);
+    if (allegedProto !== actualProto) {
+      throw new TypeError("prototype value does not match: " + this.target);
+    }
+    return actualProto;
+  },
+  
+  /**
    * In the direct proxies design with refactored prototype climbing,
    * this trap is deprecated. For proxies-as-prototypes, for-in will
    * call the enumerate() trap. If that trap is not defined, the
@@ -1153,6 +1203,58 @@ Validator.prototype = {
     } else {
       throw new TypeError("new: "+ target + " is not a function");
     }
+  },
+  
+  /**
+   * Checks whether the trap result is consistent with the state of the
+   * wrapped target.
+   */
+  isSealed: function() {
+    var trap = this.getTrap("isSealed");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.isSealed(this.target);
+    }
+
+    var result = trap(this.target);
+    result = !!result; // coerce to Boolean
+    var state = Object_isSealed(this.target);
+    if (result !== state) {
+      if (result) {
+        throw new TypeError("cannot report unsealed object as sealed: "+
+                             this.target);
+      } else {
+        throw new TypeError("cannot report sealed object as unsealed: "+
+                             this.target);
+      }
+    }
+    return state;
+  },
+  
+  /**
+   * Checks whether the trap result is consistent with the state of the
+   * wrapped target.
+   */
+  isFrozen: function() {
+    var trap = this.getTrap("isFrozen");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.isFrozen(this.target);
+    }
+
+    var result = trap(this.target);
+    result = !!result; // coerce to Boolean
+    var state = Object_isFrozen(this.target);
+    if (result !== state) {
+      if (result) {
+        throw new TypeError("cannot report unfrozen object as frozen: "+
+                             this.target);
+      } else {
+        throw new TypeError("cannot report frozen object as unfrozen: "+
+                             this.target);
+      }
+    }
+    return state;
   }
 };
 
@@ -1203,6 +1305,38 @@ Object.freeze = function(subject) {
     return prim_freeze(subject);
   }
 };
+Object.isExtensible = Object_isExtensible = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return vHandler.isExtensible();
+  } else {
+    return prim_isExtensible(subject);
+  }
+};
+Object.isSealed = Object_isSealed = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return vHandler.isSealed();
+  } else {
+    return prim_isSealed(subject);
+  }
+};
+Object.isFrozen = Object_isFrozen = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return vHandler.isFrozen();
+  } else {
+    return prim_isFrozen(subject);
+  }
+};
+Object.getPrototypeOf = Object_getPrototypeOf = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return vHandler.getPrototypeOf();
+  } else {
+    return prim_getPrototypeOf(subject);
+  }
+};
 
 // patch Object.getOwnPropertyDescriptor to directly call
 // the Validator.prototype.getOwnPropertyDescriptor trap
@@ -1215,21 +1349,6 @@ Object.getOwnPropertyDescriptor = function(subject, name) {
     return vhandler.getOwnPropertyDescriptor(name);
   } else {
     return prim_getOwnPropertyDescriptor(subject, name);
-  }
-};
-
-// returns a new function of one argument that applies the
-// given primitive to the argument, after recursively unwrapping
-// any proxies. The primitive is assumed to be a one-argument "static"
-// function of one argument that ignores its |this| value
-function makeUnwrapping1ArgStatic(primitive) {
-  return function builtin(subject) {
-    var vHandler = directProxies.get(subject);
-    if (vHandler !== undefined) {
-      return builtin(vHandler.target);
-    } else {
-      return primitive(subject);
-    } 
   }
 };
 
@@ -1247,15 +1366,6 @@ function makeUnwrapping0ArgMethod(primitive) {
     } 
   }
 };
-
-Object.isExtensible = Object_isExtensible =
-  makeUnwrapping1ArgStatic(Object.isExtensible);
-Object.isSealed = Object_isSealed =
-  makeUnwrapping1ArgStatic(Object.isSealed);
-Object.isFrozen = Object_isFrozen =
-  makeUnwrapping1ArgStatic(Object.isFrozen);
-Object.getPrototypeOf =
-  makeUnwrapping1ArgStatic(Object.getPrototypeOf);
 
 Object.prototype.valueOf =
   makeUnwrapping0ArgMethod(Object.prototype.valueOf);
@@ -1336,6 +1446,9 @@ var Reflect = global.Reflect = {
   deleteProperty: function(target, name) {
     return nonstrictDelete(target, name);
   },
+  getPrototypeOf: function(target) {
+    return Object.getPrototypeOf(target);
+  },
   freeze: function(target) {
     Object.freeze(target);
     return true;
@@ -1347,6 +1460,15 @@ var Reflect = global.Reflect = {
   preventExtensions: function(target) {
     Object.preventExtensions(target);
     return true;
+  },
+  isExtensible: function(target) {
+    return Object.isExtensible(target);
+  },
+  isSealed: function(target) {
+    return Object.isSealed(target);
+  },
+  isFrozen: function(target) {
+    return Object.isFrozen(target);
   },
   has: function(target, name) {
     return name in target;
@@ -1508,9 +1630,11 @@ Handler.prototype = {
   // fundamental traps
   getOwnPropertyDescriptor: forward("getOwnPropertyDescriptor"),
   getOwnPropertyNames:      forward("getOwnPropertyNames"),
+  getPrototypeOf:           forward("getPrototypeOf"),
   defineProperty:           forward("defineProperty"),
   deleteProperty:           forward("deleteProperty"),
   preventExtensions:        forward("preventExtensions"),
+  isExtensible:             forward("isExtensible"),
   apply:                    forward("apply"),
  
   // derived traps
@@ -1549,6 +1673,37 @@ Handler.prototype = {
       }
     }
     return success;
+  },
+  isSealed: function(target) {
+    var props = this.getOwnPropertyNames(target);
+    var l = +props.length;
+    for (var i = 0; i < l; i++) {
+      var name = props[i];
+      var desc = this.getOwnPropertyDescriptor(target,name);
+      desc = normalizeAndCompletePropertyDescriptor(desc);
+      if (desc.configurable) {
+        return false;
+      }
+    }
+    return !this.isExtensible(target);
+  },
+  isFrozen: function(target) {
+    var props = this.getOwnPropertyNames(target);
+    var l = +props.length;
+    for (var i = 0; i < l; i++) {
+      var name = props[i];
+      var desc = this.getOwnPropertyDescriptor(target,name);
+      desc = normalizeAndCompletePropertyDescriptor(desc);
+      if (isDataDescriptor(desc)) {
+        if (desc.writable) {
+          return false;
+        }
+      }
+      if (desc.configurable) {
+        return false;
+      }
+    }
+    return !this.isExtensible(target); 
   },
   has: function(target, name) {
     var desc = this.getOwnPropertyDescriptor(target, name);
