@@ -23,7 +23,10 @@ API
 ===
 
 This module exports a single object named `Reflect`.
-See the [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) and [Handler API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md) docs for details.
+
+The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects: [overview of all supported traps](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/traps.md).
+
+See the [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) and [Handler API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md) docs for further details.
 
 Compatibility
 =============
@@ -66,5 +69,4 @@ Next steps
   *  Provide fallback behavior for part of the API, for environments without Proxy or WeakMap support.
   *  More tests.
   *  Switch to qunit or other unit testing framework.
-  *  Add example uses of proxies.
-  *  More detailed API description.
+  *  Add example uses of proxies (e.g. membranes)
