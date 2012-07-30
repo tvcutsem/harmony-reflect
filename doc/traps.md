@@ -1,0 +1,203 @@
+# Proxy Traps
+
+The following table shows Javascript code on the left, and approximately how that code is trapped and interpreted by the Proxy mechanism on the right.
+
+Assume `proxy` is defined as:
+
+    var proxy = Proxy(target, handler)
+
+<table
+  border="0"
+  cellspacing="5"
+  cellpadding="5"
+  style="font-family: monospace;">
+  <tr>
+    <td colspan="3">Syntactic operations that can be intercepted</td>
+  </tr>
+  <tr>
+    <th>operation</th>
+    <th>code</th>
+    <th>trapped as</th>
+  </tr>
+  <tr>
+    <td>property access</td>
+    <td>proxy.foo<br/>proxy['foo']</td>
+    <td>handler.get(target, 'foo', proxy)</td>
+  </tr>
+  <tr>
+    <td>property assignment</td>
+    <td>proxy.foo = v<br/>proxy['foo'] = v</td>
+    <td>handler.set(target, 'foo', v, proxy)</td>
+  </tr>
+  <tr>
+    <td>property invocation (1)</td>
+    <td>proxy.foo(1,2,3)</td>
+    <td>handler.get(target, 'foo', proxy).apply(proxy, [1,2,3])</td>
+  </tr>
+  <tr>
+    <td>property query</td>
+    <td>'foo' in proxy</td>
+    <td>handler.has(target, 'foo')</td>
+  </tr>
+  <tr>
+    <td>property deletion</td>
+    <td>delete proxy.foo<br/>delete proxy['foo']</td>
+    <td>handler.delete(target, 'foo')</td>
+  </tr>
+  <tr>
+    <td>property enumeration</td>
+    <td>for (var prop in proxy) { ... }</td>
+    <td><pre>var $props = handler.enumerate(target);
+for (var $i = 0; i < $props.length; i++) {
+  var prop = String($props[i]);
+  ...
+}</pre></td>
+  </tr>
+  <tr>
+    <td>inherited property access</td>
+    <td>var obj = Object.create(proxy); obj.foo;</td>
+    <td>handler.get(target, 'foo', obj)</td>
+  </tr>
+  <tr>
+    <td>inherited property assignment</td>
+    <td>var obj = Object.create(proxy); obj.foo = v;</td>
+    <td>handler.set(target, 'foo', v, obj)</td>
+  </tr>
+  <tr>
+    <td>iteration (2)</td>
+    <td>for (var elem of proxy) { ... }</td>
+    <td><pre>var $iterator = handler.iterate(target);
+try {
+  while (true) {
+    var elem = $iterator.next();
+    ...
+  }
+} catch (e) {
+  if (!(e instanceof StopIteration)) throw e;
+}</pre></td>
+  </tr>
+  <tr>
+    <td colspan="3">Operations on function proxies</td>
+  </tr>
+  <tr>
+    <td>function call (3)</td>
+    <td>proxy(...args)</td>
+    <td>handler.apply(target, undefined, args)</td>
+  </tr>
+  <tr>
+    <td>function construct</td>
+    <td>new proxy(...args)</td>
+    <td>handler.construct(target, args)</td>
+  </tr>
+  <tr>
+    <td>method call (4)</td>
+    <td>object.proxy(...args)</td>
+    <td>handler.apply(target, object, args)</td>
+  </tr>
+  <tr>
+    <td>Function.prototype.call (5)</td>
+    <td>proxy.call(object, ...args)</td>
+    <td>handler.apply(target, object, args)</td>
+  </tr>
+  <tr>
+    <td colspan="3">Non-interceptable operators</td>
+  </tr>
+  <tr>
+    <td>typeof</td>
+    <td>typeof proxy</td>
+    <td>typeof target</td>
+  </tr>
+  <tr>
+    <td>===</td>
+    <td>proxy === v</td>
+    <td>proxy === v</td>
+  </tr>
+  <tr>
+    <td colspan="3">(Static) operations on Object</td>
+  </tr>
+  <tr>
+    <td>keys</td>
+    <td>Object.keys(proxy)</td>
+    <td>handler.keys(target)</td>
+  </tr>
+  <tr>
+    <td>getOwnPropertyDescriptor (6)</td>
+    <td>Object.getOwnPropertyDescriptor(proxy, 'foo')</td>
+    <td>handler.getOwnPropertyDescriptor(target, 'foo')</td>
+  </tr>
+  <tr>
+    <td>defineProperty (6)</td>
+    <td>Object.defineProperty(proxy, 'foo', {value:42})</td>
+    <td>handler.defineProperty(target, 'foo', {value:42,writable:true,enumerable:true,configurable:true})</td>
+  </tr>
+  <tr>
+    <td>getOwnPropertyNames</td>
+    <td>Object.getOwnPropertyNames(proxy)</td>
+    <td>handler.getOwnPropertyNames(target)</td>
+  </tr>
+  <tr>
+    <td>freeze</td>
+    <td>Object.freeze(proxy)</td>
+    <td>handler.freeze(target)</td>
+  </tr>
+  <tr>
+    <td>seal</td>
+    <td>Object.seal(proxy)</td>
+    <td>handler.seal(target)</td>
+  </tr>
+  <tr>
+    <td>preventExtensions</td>
+    <td>Object.preventExtensions(proxy)</td>
+    <td>handler.preventExtensions(target)</td>
+  </tr>
+  <tr>
+    <td>isFrozen</td>
+    <td>Object.isFrozen(proxy)</td>
+    <td>handler.isFrozen(target)</td>
+  </tr>
+  <tr>
+    <td>isSealed</td>
+    <td>Object.isSealed(proxy)</td>
+    <td>handler.isSealed(target)</td>
+  </tr>
+  <tr>
+    <td>isExtensible</td>
+    <td>Object.isExtensible(proxy)</td>
+    <td>handler.isExtensible(target)</td>
+  </tr>
+  <tr>
+    <td>getPrototypeOf</td>
+    <td>Object.getPrototypeOf(proxy)</td>
+    <td>handler.getPrototypeOf(target)</td>
+  </tr>
+  <tr>
+    <td colspan="3">Built-ins inherited from Object.prototype</td>
+  </tr>
+  <tr>
+    <td>hasOwnProperty (7)</td>
+    <td>proxy.hasOwnProperty('foo')</td>
+    <td>handler.hasOwn(target, 'foo')</td>
+  </tr>
+  <tr>
+    <td>valueOf (8)</td>
+    <td>proxy.valueOf()</td>
+    <td>target.valueOf()</td>
+  </tr>
+  <tr>
+    <td>toString (9)</td>
+    <td>proxy.toString()</td>
+    <td>target.toString()</td>
+  </tr>
+</table>
+
+## Notes
+
+  * (1): in Javascript, a method call like `obj.foo(1,2,3)` is defined as looking up the "foo" property on `obj`, and then calling the resulting function with `obj` as the `this`-binding. If `obj` is a proxy, the same strategy applies. There is no separate `invoke` trap.
+  * (2): the `for-of` statement is forthcoming in ECMAScript 6.
+  * (3): the syntax `...args` is ECMAScript 6 syntax for "spreading" arguments into a call. `f(...[1,2,3])` is equivalent to `f(1,2,3)`.
+  * (4): this assumes that the proxy was installed as a method on `object`, e.g. `var object = { proxy: Proxy(target, handler) }`.
+  * (5): assuming that `proxy.call`, which triggers the proxy's "get" trap, returned `Function.prototype.call`.
+  * (6): the return value of the `getOwnPropertyDescriptor` and the third argument to the `defineProperty` trap (the property descriptor object) is not the original value returned from/passed into the intercepted operation. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
+  * (7): assuming that `proxy.hasOwnProperty`, which triggers the proxy's "get" trap, returned `Object.prototype.hasOwnProperty`.
+  * (8): assuming that `proxy.valueOf`, which triggers the proxy's "get" trap, returned `Object.prototype.valueOf`.
+  * (9): assuming that `proxy.toString`, which triggers the proxy's "get" trap, returned `Object.prototype.toString`.
