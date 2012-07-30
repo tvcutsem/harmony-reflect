@@ -6,18 +6,19 @@ Assume `proxy` is defined as:
 
     var proxy = Proxy(target, handler)
 
+See further notes below for details.
+
 <table
   border="0"
   cellspacing="5"
-  cellpadding="5"
-  style="font-family: monospace;">
+  cellpadding="5">
   <tr>
     <td colspan="3">Syntactic operations that can be intercepted</td>
   </tr>
   <tr>
-    <th>operation</th>
-    <th>code</th>
-    <th>trapped as</th>
+    <th>Operation</th>
+    <th>Code</th>
+    <th>Trapped as</th>
   </tr>
   <tr>
     <td>property access</td>
@@ -55,12 +56,12 @@ for (var $i = 0; i < $props.length; i++) {
   </tr>
   <tr>
     <td>inherited property access</td>
-    <td>var obj = Object.create(proxy); obj.foo;</td>
+    <td>var obj = Object.create(proxy);<br/>obj.foo;</td>
     <td>handler.get(target, 'foo', obj)</td>
   </tr>
   <tr>
     <td>inherited property assignment</td>
-    <td>var obj = Object.create(proxy); obj.foo = v;</td>
+    <td>var obj = Object.create(proxy);<br/>obj.foo = v;</td>
     <td>handler.set(target, 'foo', v, obj)</td>
   </tr>
   <tr>
@@ -113,6 +114,24 @@ try {
     <td>proxy === v</td>
   </tr>
   <tr>
+    <td colspan="3">Built-ins inherited from Object.prototype</td>
+  </tr>
+  <tr>
+    <td>hasOwnProperty (6)</td>
+    <td>proxy.hasOwnProperty('foo')</td>
+    <td>handler.hasOwn(target, 'foo')</td>
+  </tr>
+  <tr>
+    <td>valueOf (7)</td>
+    <td>proxy.valueOf()</td>
+    <td>target.valueOf()</td>
+  </tr>
+  <tr>
+    <td>toString (8)</td>
+    <td>proxy.toString()</td>
+    <td>target.toString()</td>
+  </tr>
+  <tr>
     <td colspan="3">(Static) operations on Object</td>
   </tr>
   <tr>
@@ -121,12 +140,12 @@ try {
     <td>handler.keys(target)</td>
   </tr>
   <tr>
-    <td>getOwnPropertyDescriptor (6)</td>
+    <td>getOwnPropertyDescriptor (9)</td>
     <td>Object.getOwnPropertyDescriptor(proxy, 'foo')</td>
     <td>handler.getOwnPropertyDescriptor(target, 'foo')</td>
   </tr>
   <tr>
-    <td>defineProperty (6)</td>
+    <td>defineProperty (10)</td>
     <td>Object.defineProperty(proxy, 'foo', {value:42})</td>
     <td>handler.defineProperty(target, 'foo', {value:42,writable:true,enumerable:true,configurable:true})</td>
   </tr>
@@ -170,24 +189,6 @@ try {
     <td>Object.getPrototypeOf(proxy)</td>
     <td>handler.getPrototypeOf(target)</td>
   </tr>
-  <tr>
-    <td colspan="3">Built-ins inherited from Object.prototype</td>
-  </tr>
-  <tr>
-    <td>hasOwnProperty (7)</td>
-    <td>proxy.hasOwnProperty('foo')</td>
-    <td>handler.hasOwn(target, 'foo')</td>
-  </tr>
-  <tr>
-    <td>valueOf (8)</td>
-    <td>proxy.valueOf()</td>
-    <td>target.valueOf()</td>
-  </tr>
-  <tr>
-    <td>toString (9)</td>
-    <td>proxy.toString()</td>
-    <td>target.toString()</td>
-  </tr>
 </table>
 
 ## Notes
@@ -197,7 +198,8 @@ try {
   * (3): the syntax `...args` is ECMAScript 6 syntax for "spreading" arguments into a call. `f(...[1,2,3])` is equivalent to `f(1,2,3)`.
   * (4): this assumes that the proxy was installed as a method on `object`, e.g. `var object = { proxy: Proxy(target, handler) }`.
   * (5): assuming that `proxy.call`, which triggers the proxy's "get" trap, returned `Function.prototype.call`.
-  * (6): the return value of the `getOwnPropertyDescriptor` and the third argument to the `defineProperty` trap (the property descriptor object) is not the original value returned from/passed into the intercepted operation. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
-  * (7): assuming that `proxy.hasOwnProperty`, which triggers the proxy's "get" trap, returned `Object.prototype.hasOwnProperty`.
-  * (8): assuming that `proxy.valueOf`, which triggers the proxy's "get" trap, returned `Object.prototype.valueOf`.
-  * (9): assuming that `proxy.toString`, which triggers the proxy's "get" trap, returned `Object.prototype.toString`.
+  * (6): assuming that `proxy.hasOwnProperty`, which triggers the proxy's "get" trap, returned `Object.prototype.hasOwnProperty`.
+  * (7): assuming that `proxy.valueOf`, which triggers the proxy's "get" trap, returned `Object.prototype.valueOf`.
+  * (8): assuming that `proxy.toString`, which triggers the proxy's "get" trap, returned `Object.prototype.toString`.
+  * (9): the return value of the `getOwnPropertyDescriptor` trap (the property descriptor object) is not the original value returned from the intercepted `Object.getOwnPropertyDescriptor` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
+  * (10): the third argument to the `defineProperty` trap (the property descriptor object) is not the original value passed into the intercepted `Object.defineProperty` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
