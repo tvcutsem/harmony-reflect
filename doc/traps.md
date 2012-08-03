@@ -74,7 +74,7 @@ try {
     ...
   }
 } catch (e) {
-  if (!(e instanceof StopIteration)) throw e;
+  if (e !== StopIteration) throw e;
 }</pre></td>
   </tr>
   <tr>
