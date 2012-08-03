@@ -195,7 +195,7 @@ try {
 
   * (1): in Javascript, a method call like `obj.foo(1,2,3)` is defined as looking up the "foo" property on `obj`, and then calling the resulting function with `obj` as the `this`-binding. If `obj` is a proxy, the same strategy applies. There is no separate `invoke` trap.
   * (2): the `for-of` statement is forthcoming in ECMAScript 6.
-  * (3): the syntax `...args` is ECMAScript 6 syntax for "spreading" arguments into a call. `f(...[1,2,3])` is equivalent to `f(1,2,3)`.
+  * (3): the syntax `...args` is ECMAScript 6 syntax for "spreading" arguments into a call. `f(...[1,2,3])` is equivalent to `f(1,2,3)`. Function calls can only be intercepted if the target is a function, i.e. `typeof target === "function"`.
   * (4): this assumes that the proxy was installed as a method on `object`, e.g. `var object = { proxy: Proxy(target, handler) }`.
   * (5): assuming that `proxy.call`, which triggers the proxy's "get" trap, returned `Function.prototype.call`.
   * (6): assuming that `proxy.hasOwnProperty`, which triggers the proxy's "get" trap, returned `Object.prototype.hasOwnProperty`.
