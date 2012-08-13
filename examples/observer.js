@@ -143,7 +143,7 @@ Observer = function Observer(Object) {
         throw new TypeError("change record type must be a string, given "+type);
       }
       var newRecord = Object.create(Object.prototype);
-      for (var propName in newRecord) {
+      for (var propName in changeRecord) {
         newRecord[propName] = changeRecord[propName];
       }
       // Q: perhaps no longer necessary -> newRecord doesn't leak
