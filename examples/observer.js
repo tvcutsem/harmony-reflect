@@ -142,11 +142,6 @@ Observer = function Observer(Object) {
       if (typeof type !== "string") {
         throw new TypeError("change record type must be a string, given "+type);
       }
-      // Q: checking typeof name seems to be removed in latest draft?
-      var name = changeRecord.name;
-      if (typeof name !== "string") {
-        throw new TypeError("change record name must be a string, given "+name);
-      }
       var newRecord = Object.create(Object.prototype);
       for (var propName in newRecord) {
         newRecord[propName] = changeRecord[propName];
