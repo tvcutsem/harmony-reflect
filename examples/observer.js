@@ -132,20 +132,16 @@ Observer = function Observer(Object) {
       if (target === undefined) { return undefined; }
       var changeObservers = _NotifierChangeObservers.get(notifier);
       if (changeObservers === undefined) { return undefined; }
-      // Q: should the changeRecord really define an 'object' prop?
-      // Can't the notifier tack it on automatically?
-      var object = changeRecord.object;
-      if (object !== target) {
-        throw new TypeError("change record object does not match notifier target");
-      }
       var type = changeRecord.type;
       if (typeof type !== "string") {
         throw new TypeError("change record type must be a string, given "+type);
       }
       var newRecord = Object.create(Object.prototype);
       for (var propName in changeRecord) {
+        if (propName == "object") { continue; }
         newRecord[propName] = changeRecord[propName];
       }
+      newRecord.object = target;
       // Q: perhaps no longer necessary -> newRecord doesn't leak
       Object.preventExtensions(newRecord);
       _EnqueueChangeRecord(newRecord, changeObservers);
