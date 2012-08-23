@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/tvcutsem/harmony-reflect.png)](http://travis-ci.org/tvcutsem/harmony-reflect)
 This is a shim for the ECMAScript-Harmony [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
 
 In a browser, after loading
