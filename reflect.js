@@ -61,6 +61,7 @@
  //  - Object.{isFrozen,isSealed,isExtensible}
  //  - Object.getPrototypeOf
  //  - Object.prototype.valueOf
+ //  - Object.prototype.isPrototypeOf
  //  - Object.getOwnPropertyDescriptor
  //  - Function.prototype.toString
  //  - Proxy
@@ -831,7 +832,7 @@ Validator.prototype = {
 
     var allegedProto = trap(this.target);
     var actualProto = Object_getPrototypeOf(this.target);
-    if (allegedProto !== actualProto) {
+    if (!sameValue(allegedProto, actualProto)) {
       throw new TypeError("prototype value does not match: " + this.target);
     }
     return actualProto;
@@ -1367,8 +1368,25 @@ function makeUnwrapping0ArgMethod(primitive) {
   }
 };
 
+// returns a new function of 1 arguments that recursively
+// unwraps any proxies specified as the |this|-value.
+// The primitive is assumed to be a 1-argument method
+// that uses its |this|-binding.
+function makeUnwrapping1ArgMethod(primitive) {
+  return function builtin(arg) {
+    var vHandler = directProxies.get(this);
+    if (vHandler !== undefined) {
+      return builtin.call(vHandler.target, arg);
+    } else {
+      return primitive.call(this, arg);
+    } 
+  }
+};
+
 Object.prototype.valueOf =
   makeUnwrapping0ArgMethod(Object.prototype.valueOf);
+Object.prototype.isPrototypeOf =
+  makeUnwrapping1ArgMethod(Object.prototype.isPrototypeOf);
 Function.prototype.toString =
   makeUnwrapping0ArgMethod(Function.prototype.toString);
 Date.prototype.toString =
