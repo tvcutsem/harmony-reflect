@@ -54,6 +54,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.getPrototypeOf
     Object.prototype.valueOf
     Object.getOwnPropertyDescriptor
+    Object.defineProperty
     Function.prototype.toString
     Date.prototype.toString
     Proxy

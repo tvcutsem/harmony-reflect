@@ -341,7 +341,8 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_isSealed =                 Object.isSealed,
     prim_isFrozen =                 Object.isFrozen,
     prim_getPrototypeOf =           Object.getPrototypeOf,
-    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+    prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
+    prim_defineProperty =           Object.defineProperty;
 
 // these will point to the patched versions of the respective methods on
 // Object. They are used within this module as the "intrinsic" bindings
@@ -530,13 +531,14 @@ Validator.prototype = {
       }
     }
     
-    if (!desc.configurable && !isFixed(name, this.target)) {
-      // if the property is non-existent on the target, but is reported
-      // as a non-configurable property, it may later be reported as
-      // non-existent, which violates the invariant that if the property
-      // might disappear, the configurable attribute must be true.
+    if (!desc.configurable && !isSealed(name, this.target)) {
+      // if the property is configurable or non-existent on the target,
+      // but is reported as a non-configurable property, it may later be
+      // reported as configurable or non-existent, which violates the
+      // invariant that if the property might change or disappear, the
+      // configurable attribute must be true.
       throw new TypeError("cannot report a non-configurable descriptor "+
-                          "for non-existent property '"+name+"'");
+                          "for configurable or non-existent property '"+name+"'");
     }
     
     return desc;
@@ -606,7 +608,6 @@ Validator.prototype = {
     var success = trap(this.target, name, desc);
     success = !!success; // coerce to Boolean
 
-
     if (success === true) {
       
       // Note: we could collapse the following two if-tests into a single
@@ -633,7 +634,7 @@ Validator.prototype = {
       }
       
     }
-    
+        
     return success;
   },
   
@@ -1343,13 +1344,47 @@ Object.getPrototypeOf = Object_getPrototypeOf = function(subject) {
 // the Validator.prototype.getOwnPropertyDescriptor trap
 // This is to circumvent an assertion in the built-in Proxy
 // trapping mechanism of v8, which disallows that trap to
-// return non-configurable property descriptors.
+// return non-configurable property descriptors (as per the
+// old Proxy design)
 Object.getOwnPropertyDescriptor = function(subject, name) {
   var vhandler = directProxies.get(subject);
   if (vhandler !== undefined) {
     return vhandler.getOwnPropertyDescriptor(name);
   } else {
     return prim_getOwnPropertyDescriptor(subject, name);
+  }
+};
+
+// patch Object.defineProperty to directly call
+// the Validator.prototype.defineProperty trap
+// This is to circumvent two issues with the built-in
+// trap mechanism:
+// 1) the current tracemonkey implementation of proxies
+// auto-completes 'desc', which is not correct. 'desc' should be
+// normalized, but not completed. Consider:
+// Object.defineProperty(proxy, 'foo', {enumerable:false})
+// This trap will receive desc =
+//  {value:undefined,writable:false,enumerable:false,configurable:false}
+// This will also set all other attributes to their default value,
+// which is unexpected and different from [[DefineOwnProperty]].
+// Bug filed: https://bugzilla.mozilla.org/show_bug.cgi?id=601329
+// 2) the current spidermonkey implementation does not
+// throw an exception when this trap returns 'false', but instead silently
+// ignores the operation (this is regardless of strict-mode)
+// 2a) v8 does throw an exception for this case, but includes the rather
+//     unhelpful error message:
+// 'Proxy handler #<Object> returned false from 'defineProperty' trap'
+Object.defineProperty = function(subject, name, desc) {
+  var vhandler = directProxies.get(subject);
+  if (vhandler !== undefined) {
+    var normalizedDesc = normalizePropertyDescriptor(desc);
+    var success = vhandler.defineProperty(name, normalizedDesc);
+    if (success === false) {
+      throw new TypeError("can't redefine property '"+name+"'");
+    }
+    return success;
+  } else {
+    return prim_defineProperty(subject, name, desc);
   }
 };
 
@@ -1403,6 +1438,13 @@ var Reflect = global.Reflect = {
     return Object.getOwnPropertyNames(target);
   },
   defineProperty: function(target, name, desc) {
+    
+    // if target is a proxy, invoke its "defineProperty" trap
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.defineProperty(target, name, desc);
+    }
+    
     // Implementation transliterated from [[DefineOwnProperty]]
     // see ES5.1 section 8.12.9
     // this is the _exact same algorithm_ as the validateProperty

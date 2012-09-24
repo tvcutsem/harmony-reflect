@@ -73,7 +73,9 @@ load('../reflect.js');
       fn();
       assert(false, 'expected exception, but succeeded. Message was: '+message);
     } catch(e) {
-      assert(re.test(e.message) && re.test(message), "assertThrows: "+e.message);
+      assert(e.message === message, "assertThrows: "+message+" !== " +e.message);
+      // FIXME: relax test suite message detection
+      // re.test(e.message) && re.test(message), "assertThrows: "+e.message);
     }
   }
 
@@ -205,15 +207,28 @@ load('../reflect.js');
     };
 
   TESTS.testCantEmulateNonExistentNonConfigurableProps =
-    function(brokenProxy, emulatedProps, emulatedProto, success) {
+    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
       emulatedProps.x = {value:1,configurable:false};
       assertThrows("cannot report a non-configurable descriptor for "+
-                   "non-existent property 'x'",
+                   "configurable or non-existent property 'x'",
+        function() { Object.getOwnPropertyDescriptor(brokenProxy, 'x'); });
+    };
+
+  TESTS.testCantEmulateConfigurableAsNonConfigurableProps =
+    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
+      Object.defineProperty(target, 'x', {
+        value:1,
+        configurable:true,
+        writable:true,
+        enumerable:true});
+      emulatedProps.x = {value:1,configurable:false,writable:true,enumerable:true};
+      assertThrows("cannot report a non-configurable descriptor for "+
+                   "configurable or non-existent property 'x'",
         function() { Object.getOwnPropertyDescriptor(brokenProxy, 'x'); });
     };
 
   TESTS.testCantDefineNonExistentNonConfigurableProp =
-    function(brokenProxy, emulatedProps, emulatedProto, success) {
+    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
       success.x = true;
       assertThrows("cannot successfully define a non-configurable "+
                    "descriptor for non-existent property 'x'",
@@ -269,21 +284,6 @@ load('../reflect.js');
           success.y = true;
           Object.defineProperty(brokenProxy, 'y', {value:3});
         });
-    };
-
-  TESTS.testNonConfigurableMergeOnProtect =
-    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
-      emulatedProps.x = {value:1,configurable:false};
-      // to emulate non-configurable props, must make sure they exist on target
-      Object.defineProperty(target, 'x', emulatedProps.x);
-      var result = Object.getOwnPropertyDescriptor(brokenProxy, 'x');
-      assert(result.value === 1 && result.configurable === false,
-             'x was observed as non-configurable');
-      emulatedProps.x = {value:1,configurable:true};
-      // fixing the proxy will merge all reported properties returned
-      // by the fix() trap with existing properties
-      assertThrows("can't redefine non-configurable property 'x'",
-        function() { Object.preventExtensions(brokenProxy); });
     };
 
   TESTS.testNonConfigurableNoDelete =
@@ -479,7 +479,7 @@ load('../reflect.js');
     assert(target.x === 1, 'target.x === 1');
     assert(proxy.x === 1, 'proxy.x === 1');
 
-    assertThrows("can't redefine non-configurable property 'x'",
+    assertThrows("can't redefine property 'x'",
       function() {
         Object.defineProperty(proxy,'x',{configurable:false,value:2});
       });
