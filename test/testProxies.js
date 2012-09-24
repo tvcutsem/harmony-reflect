@@ -95,6 +95,7 @@ load('../reflect.js');
       testFunctions();
       testSet();
       testTransparentWrappers();
+      testRevocableProxies();
 
       for (var testName in TESTS) {
         emulatedProps = {};
@@ -730,6 +731,16 @@ load('../reflect.js');
       assert(str === Array.prototype.toString.call(app),
              'Array.prototype.toString on app');
     }());
+  }
+  
+  function testRevocableProxies() {
+    var target = {};
+    var handler = { get: function() { return 1; }};
+    var tuple = Proxy.revocable(target, handler);
+    var p = tuple.proxy;
+    assert(p.x === 1, 'unrevoked proxy get works');
+    tuple.revoke();
+    assertThrows('proxy is revoked', function() { p.x });
   }
     
   if (typeof window === "undefined") {

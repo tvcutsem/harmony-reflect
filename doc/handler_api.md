@@ -121,7 +121,7 @@ The proxy throws a TypeError if:
 
   *  This trap returns `undefined`, but the `name` property of `target` is non-configurable. If a target property is non-configurable, a proxy cannot hide it.
   *  This trap returns a property descriptor that is not compatible with the corresponding property in `target` (e.g. `target[name]` is non-configurable and this trap returns a configurable descriptor).
-  *  This trap returns a non-configurable property that doesn't exist on `target`. A non-configurable property can only be exposed if the `target` object has a corresponding property.
+  *  This trap returns a non-configurable property that is configurable or doesn't exist on `target`. A non-configurable property can only be exposed if the `target` object has a corresponding non-configurable property.
   
 Examples:
 

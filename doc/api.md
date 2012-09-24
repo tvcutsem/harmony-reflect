@@ -213,3 +213,18 @@ The following `Handler` traps are regarded as "fundamental", and by default forw
 All other traps are "derived", and default to one or more of the above "fundamental" traps: get, set, has, hasOwn, keys, enumerate, iterate, seal, freeze, isSealed, isFrozen, construct.
 
 [More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
+
+## Proxy.revocable(target, handler)
+
+Returns an object with properties `proxy` and `revoke`. `proxy` is a freshly constructed proxy, as if by calling `Proxy(target, handler)`. `revoke()` is a function that when called, renders the associated proxy unusable: any trappable operation performed on `proxy` after it has been revoked results in a TypeError.
+
+When a proxy is revoked, it no longer refers to its `target` and `handler` so that these may become subject to garbage-collection.
+
+Example:
+
+    var tuple = Proxy.revocable(target, handler);
+    var proxy = tuple.proxy;
+    var revoke = tuple.revoke;
+    proxy.foo // traps
+    revoke()  // returns undefined
+    proxy.foo // throws TypeError: "proxy is revoked"

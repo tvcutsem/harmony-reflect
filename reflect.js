@@ -1030,6 +1030,8 @@ Validator.prototype = {
    *  - create and return a fresh Array,
    *  - of which each element is coerced to String,
    *  - which does not contain duplicates
+   *
+   * TODO(tvcutsem) trap return value should change from [string] to iterator.
    */
   enumerate: function() {
     var trap = this.getTrap("enumerate");
@@ -1966,6 +1968,22 @@ if (typeof Proxy !== "undefined") {
       directProxies.set(proxy, vHandler);
       return proxy;
     };
+    
+    Reflect.Proxy.revocable = function(target, handler) {
+      var proxy = Reflect.Proxy(target, handler);
+      var revoke = function() {
+        var vHandler = directProxies.get(proxy);
+        if (vHandler !== null) {
+          // vHandler.target = null;         // null-out [[Target]]
+          Object.defineProperty(vHandler, 'target', {
+            get: function() { throw new TypeError("proxy is revoked"); }
+          });
+        }
+        directProxies.set(proxy, null);   // null-out [[Handler]]
+        return undefined;
+      };
+      return {proxy: proxy, revoke: revoke};
+    }
 
   } else {
     // Proxy is already a function, so presumably direct proxies
