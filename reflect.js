@@ -442,9 +442,11 @@ function validateProperty(target, name, desc) {
  * Both target and handler must be proper Objects at initialization time.
  */
 function Validator(target, handler) {
-  // this is a const reference, this.target should never change
-  this.target = target;
-  // this is a const reference, this.handler should never change
+  // for non-revokable proxies, these are const references
+  // for revokable proxies, on revocation:
+  // - this.target is set to null
+  // - this.handler is set to a handler that throws on all traps
+  this.target  = target;
   this.handler = handler;
 }
 
@@ -1929,6 +1931,10 @@ Handler.prototype = {
   }
 };
 
+var revokedHandler = Proxy.create({
+  get: function() { throw new TypeError("proxy is revoked"); }
+});
+
 // feature-test whether the Proxy global exists
 if (typeof Proxy !== "undefined") {
 
@@ -1974,12 +1980,9 @@ if (typeof Proxy !== "undefined") {
       var revoke = function() {
         var vHandler = directProxies.get(proxy);
         if (vHandler !== null) {
-          // vHandler.target = null;         // null-out [[Target]]
-          Object.defineProperty(vHandler, 'target', {
-            get: function() { throw new TypeError("proxy is revoked"); }
-          });
+          vHandler.target  = null;
+          vHandler.handler = revokedHandler;
         }
-        directProxies.set(proxy, null);   // null-out [[Handler]]
         return undefined;
       };
       return {proxy: proxy, revoke: revoke};

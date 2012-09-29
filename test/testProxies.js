@@ -741,6 +741,10 @@ load('../reflect.js');
     assert(p.x === 1, 'unrevoked proxy get works');
     tuple.revoke();
     assertThrows('proxy is revoked', function() { p.x });
+    assertThrows('proxy is revoked', function() { p.x = 1 });
+    assertThrows('proxy is revoked', function() { Object.isExtensible(p) });
+    assertThrows('proxy is revoked', function() { delete p.x });
+    assert(typeof p === 'object', 'typeof still works on revoked proxy');
   }
     
   if (typeof window === "undefined") {
