@@ -232,9 +232,26 @@ load('../reflect.js');
     function(brokenProxy, emulatedProps, emulatedProto, success, target) {
       success.x = true;
       assertThrows("cannot successfully define a non-configurable "+
-                   "descriptor for non-existent property 'x'",
+                   "descriptor for configurable or non-existent property 'x'",
         function() { Object.defineProperty(brokenProxy, 'x',
                                            {value:1,configurable:false}); });
+    };
+
+  TESTS.testCantDefineConfigurableAsNonConfigurableProp =
+    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
+      Object.defineProperty(target, 'x', {
+        value:1,
+        writable:true,
+        enumerable:true,
+        configurable:true });
+      success.x = true;
+      assertThrows("cannot successfully define a non-configurable "+
+                   "descriptor for configurable or non-existent property 'x'",
+        function() { Object.defineProperty(brokenProxy, 'x',
+                                           {value:1,
+                                            writable:true,
+                                            enumerable:true,
+                                            configurable:false}); });
     };
 
   TESTS.testNonConfigurableRedefinition =

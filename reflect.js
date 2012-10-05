@@ -360,6 +360,9 @@ function isSealed(name, target) {
   if (desc === undefined) { return false; }
   return !desc.configurable;
 }
+function isSealedDesc(desc) {
+  return desc !== undefined && !desc.configurable;
+}
 
 /**
  * Performs all validation that Object.defineProperty performs,
@@ -368,9 +371,7 @@ function isSealed(name, target) {
  *
  * Implementation transliterated from ES5.1 section 8.12.9
  */
-function validateProperty(target, name, desc) {
-  var current = Object.getOwnPropertyDescriptor(target, name);
-  var extensible = Object.isExtensible(target);
+function isCompatibleDescriptor(extensible, current, desc) {
   if (current === undefined && extensible === false) {
     return false;
   }
@@ -496,13 +497,16 @@ Validator.prototype = {
     name = String(name);
     var desc = trap(this.target, name);
     desc = normalizeAndCompletePropertyDescriptor(desc);
+    
+    var targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
+    var extensible = Object.isExtensible(this.target);
+    
     if (desc === undefined) {      
-      if (isSealed(name, this.target)) {
+      if (isSealedDesc(targetDesc)) {
         throw new TypeError("cannot report non-configurable property '"+name+
                             "' as non-existent");        
       }
-      if (!Object.isExtensible(this.target) &&
-          isFixed(name, this.target)) {
+      if (!extensible && targetDesc !== undefined) {
           // if handler is allowed to return undefined, we cannot guarantee
           // that it will not return a descriptor for this property later.
           // Once a property has been reported as non-existent on a non-extensible
@@ -519,21 +523,21 @@ Validator.prototype = {
     // Note: we could collapse the following two if-tests into a single
     // test. Separating out the cases to improve error reporting.
     
-    if (!Object.isExtensible(this.target)) {
-      if (!isFixed(name, this.target)) {
+    if (!extensible) {
+      if (targetDesc === undefined) {
         throw new TypeError("cannot report a new own property '"+
                             name + "' on a non-extensible object");        
       }
     }
 
-    if (isFixed(name, this.target)) {
-      if (!validateProperty(this.target, name, desc)) {
+    if (name !== undefined) {
+      if (!isCompatibleDescriptor(extensible, targetDesc, desc)) {
         throw new TypeError("cannot report incompatible property descriptor "+
                             "for property '"+name+"'");
       }
     }
     
-    if (!desc.configurable && !isSealed(name, this.target)) {
+    if (!desc.configurable && !isSealedDesc(targetDesc)) {
       // if the property is configurable or non-existent on the target,
       // but is reported as a non-configurable property, it may later be
       // reported as configurable or non-existent, which violates the
@@ -611,27 +615,35 @@ Validator.prototype = {
     success = !!success; // coerce to Boolean
 
     if (success === true) {
+            
+      var targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
+      var extensible = Object.isExtensible(this.target);
       
       // Note: we could collapse the following two if-tests into a single
       // test. Separating out the cases to improve error reporting.
       
-      if (!Object.isExtensible(this.target)) {
-        if (!isFixed(name, this.target)) {
+      if (!extensible) {
+        if (targetDesc === undefined) {
           throw new TypeError("cannot successfully add a new property '"+
                               name + "' to a non-extensible object");          
         }
       }
 
-      if (isFixed(name, this.target)) {
-        if (!validateProperty(this.target, name, desc)) {
+      if (targetDesc !== undefined) {
+        if (!isCompatibleDescriptor(extensible, targetDesc, desc)) {
           throw new TypeError("cannot define incompatible property "+
                               "descriptor for property '"+name+"'");
         }
       }
       
-      if (!desc.configurable && !isFixed(name, this.target)) {
+      if (!desc.configurable && !isSealedDesc(targetDesc)) {
+        // if the property is configurable or non-existent on the target,
+        // but is successfully being redefined as a non-configurable property,
+        // it may later be reported as configurable or non-existent, which violates
+        // the invariant that if the property might change or disappear, the
+        // configurable attribute must be true.
         throw new TypeError("cannot successfully define a non-configurable "+
-                            "descriptor for non-existent property '"+
+                            "descriptor for configurable or non-existent property '"+
                             name+"'");
       }
       
@@ -1451,9 +1463,9 @@ var Reflect = global.Reflect = {
     
     // Implementation transliterated from [[DefineOwnProperty]]
     // see ES5.1 section 8.12.9
-    // this is the _exact same algorithm_ as the validateProperty
+    // this is the _exact same algorithm_ as the isCompatibleDescriptor
     // algorithm defined above, except that at every place it
-    // returns true, it actually does define the property.
+    // returns true, this algorithm actually does define the property.
     var current = Object.getOwnPropertyDescriptor(target, name);
     var extensible = Object.isExtensible(target);
     if (current === undefined && extensible === false) {
