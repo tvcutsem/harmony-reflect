@@ -26,7 +26,11 @@ function makeMembrane(initTarget) {
         if (revoked) throw new TypeError("membrane revoked");
         return function(target /*, ...args*/) { // generic trap
           var args = Array.prototype.slice.call(arguments, 1).map(wrap);
-          return wrap(Reflect[trapName].apply(undefined, [target].concat(args)));
+          try {
+            return wrap(Reflect[trapName].apply(undefined, [target].concat(args)));            
+          } catch (e) {
+            throw wrap(e);
+          }
         }
       }
     }));
