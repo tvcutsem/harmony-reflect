@@ -2,9 +2,9 @@
  * A simple membrane that doesn't distinguish between "inward"
  * and "outward" crossing of the membrane.
  *
- * This membrane doesn't support prototype wrappers to be returned
- * from Object.getPrototypeOf and will fail when non-configurable
- * own properties of the target are read. Why? See:
+ * Uses a "dummy target" to enable Object.getPrototypeOf to expose
+ * a wrapped prototype. Exposing non-configurable own properties of
+ * the real target will still fail. Why? See:
  * http://soft.vub.ac.be/~tvcutsem/invokedynamic/frozen-proxies
  *
  * @author tvcutsem
@@ -22,24 +22,29 @@ function makeMembrane(initTarget) {
   var cache = new WeakMap();
   var revoked = false;
   
-  function wrap(obj) {
-    if (Object(obj) !== obj) return obj; // primitives are passed through
-    var wrapper = cache.get(obj);
+  function wrap(target) {
+    if (Object(target) !== target) return target; // primitives are passed through
+    var wrapper = cache.get(target);
     if (wrapper) return wrapper;
-    wrapper = Proxy(obj, Proxy(obj, { // "double lifting"
-      get: function(target, trapName) {
+    
+    
+    var dummyTarget;
+    if (typeof target === "function") {
+      dummyTarget = target;
+    } else {
+      dummyTarget = Object.create(wrap(Object.getPrototypeOf(target)));      
+    }
+      
+    wrapper = Proxy(dummyTarget, Proxy(dummyTarget, { // "double lifting"
+      get: function(dummyTarget, trapName) {
         if (revoked) throw new TypeError("membrane revoked");
-        return function(target /*, ...args*/) { // generic trap
+        return function(dummyTarget /*, ...args*/) { // generic trap
           var args = Array.prototype.slice.call(arguments, 1).map(wrap);
-          try {
-            return wrap(Reflect[trapName].apply(undefined, [target].concat(args)));            
-          } catch (e) {
-            throw wrap(e);
-          }
+          return wrap(Reflect[trapName].apply(undefined, [target].concat(args)));
         }
       }
     }));
-    cache.set(obj, wrapper);
+    cache.set(target, wrapper);
     return wrapper;
   }
   
