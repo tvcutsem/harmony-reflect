@@ -1601,15 +1601,19 @@ var Reflect = global.Reflect = {
       }
       // otherwise, isDataDescriptor(ownDesc) must be true
       if (ownDesc.writable === false) return false;
-      if (receiver === target) {
+      // we found an existing writable data property on the prototype chain.
+      // Now update or add the data property on the receiver, depending on
+      // whether the receiver already defines the property or not.
+      var existingDesc = Object.getOwnPropertyDescriptor(receiver, name);
+      if (existingDesc !== undefined) {
         var updateDesc =
           { value: value,
             // FIXME: it should not be necessary to describe the following
             // attributes. Added to circumvent a bug in tracemonkey:
             // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-            writable:     ownDesc.writable,
-            enumerable:   ownDesc.enumerable,
-            configurable: ownDesc.configurable };
+            writable:     existingDesc.writable,
+            enumerable:   existingDesc.enumerable,
+            configurable: existingDesc.configurable };
         Object.defineProperty(receiver, name, updateDesc);
         return true;
       } else {
