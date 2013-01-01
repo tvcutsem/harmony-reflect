@@ -40,3 +40,10 @@ onKeys:                     function(target) // post-trap receives a copy of the
 onApply:                    function(target,thisArg,args)
 onConstruct:                function(target,args)
 ```
+
+== Why Notification Proxies? ==
+
+  * They avoid the need for costly invariant enforcement checks
+  * They forward operations automatically (no need for traps to forward manually to the target object)
+  
+Proxy abstractions that do not want operations to be forwarded automatically (i.e. that want to change arguments or return values) need to make an extra effort. The basic pattern is that such proxies use a fake "shadow" target which they "set-up" in the "pre-trap" and (if necessary) clean-up in the post-trap.
