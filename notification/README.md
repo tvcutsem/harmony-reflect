@@ -21,8 +21,8 @@ Notification Proxy Handler API
 ==============================
 
 ```
-onGetOwnPropertyDescriptor: function(target,name) // post-trap receives copy of the returned descriptor
-onGetOwnPropertyNames:      function(target) // post-trap receives copy of the returned array
+onGetOwnPropertyDescriptor: function(target,name) // post-trap receives copy of the returned descriptor (with standard attributes frozen)
+onGetOwnPropertyNames:      function(target) // post-trap receives frozen copy of the returned array
 onGetPrototypeOf:           function(target)
 onDefineProperty:           function(target,name, desc) // pre-trap receives normalized copy of the argument descriptor
 onDeleteProperty:           function(target,name)
@@ -36,12 +36,21 @@ onHas:                      function(target,name)
 onHasOwn:                   function(target,name)
 onGet:                      function(target,name,receiver)
 onSet:                      function(target,name,val,receiver)
-onEnumerate:                function(target) // post-trap receives a "copy of the iterator" (?)
-// (post-trap consuming the iterator should have no effect on the iterator returned to clients)
-onKeys:                     function(target) // post-trap receives a copy of the result array
+onEnumerate:                function(target)
+onKeys:                     function(target) // post-trap receives a frozen copy of the result array
 onApply:                    function(target,thisArg,args)
 onConstruct:                function(target,args)
 ```
+
+Q. Why do some pre- and post-traps receive copies instead of the original?
+
+Property descriptors can be mutable objects. A pre-trap could thus mutate the property descriptor before forwarding, thus confusing the client of the proxy who does not know the property was inadvertently modified.
+
+The post-traps get copies of the result. If they could get access to the actual mutable result, they could mutate the result before it is returned to the client, again confusing the client about the outcome of the operation.
+
+Q. Why do the post-traps receive frozen copies?
+
+Arrays passed into the post-traps are frozen because any updates that would be performed to these values would be ignored anyway. It's better to throw an error alerting a proxy author about an update of the copy, which is probably a bug.
 
 Why Notification Proxies?
 =========================

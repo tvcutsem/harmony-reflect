@@ -87,15 +87,6 @@
 // post-trap generic signature
 // function(target, result) -> void
 
-// TODO: Open issues:
-// - must be careful with passing in mutable values as arguments into
-//   a pre-trap, as the pre-trap may modify the value before performing
-//   the modification on the target.
-// - must be careful with passing in mutable return values as arguments
-//   into a post-trap, as the post-trap may modify the result before
-//   returning it to the client
-
-
 // Notification Proxies Handler API:
 
 // onGetOwnPropertyDescriptor: function(target,name)
@@ -235,21 +226,6 @@ function isGenericDescriptor(desc) {
   if (desc === undefined) return false;
   return !isAccessorDescriptor(desc) && !isDataDescriptor(desc);
 }
-
-function toCompletePropertyDescriptor(desc) {
-  var internalDesc = toPropertyDescriptor(desc);
-  if (isGenericDescriptor(internalDesc) || isDataDescriptor(internalDesc)) {
-    if (!('value' in internalDesc)) { internalDesc.value = undefined; }
-    if (!('writable' in internalDesc)) { internalDesc.writable = false; }
-  } else {
-    if (!('get' in internalDesc)) { internalDesc.get = undefined; }
-    if (!('set' in internalDesc)) { internalDesc.set = undefined; }
-  }
-  if (!('enumerable' in internalDesc)) { internalDesc.enumerable = false; }
-  if (!('configurable' in internalDesc)) { internalDesc.configurable = false; }
-  return internalDesc;
-}
-
 function isEmptyDescriptor(desc) {
   return !('get' in desc) &&
          !('set' in desc) &&
@@ -258,7 +234,6 @@ function isEmptyDescriptor(desc) {
          !('enumerable' in desc) &&
          !('configurable' in desc);
 }
-
 function isEquivalentDescriptor(desc1, desc2) {
   return sameValue(desc1.get, desc2.get) &&
          sameValue(desc1.set, desc2.set) &&
@@ -281,33 +256,6 @@ function sameValue(x, y) {
   // isNaN is broken: it converts its argument to number, so
   // isNaN("foo") => true
   return x !== x && y !== y;
-}
-
-/**
- * Returns a fresh property descriptor that is guaranteed
- * to be complete (i.e. contain all the standard attributes).
- * Additionally, any non-standard enumerable properties of
- * attributes are copied over to the fresh descriptor.
- *
- * If attributes is undefined, returns undefined.
- *
- * See also: http://wiki.ecmascript.org/doku.php?id=harmony:proxies_semantics
- */
-function normalizeAndCompletePropertyDescriptor(attributes) {
-  if (attributes === undefined) { return undefined; }
-  var desc = toCompletePropertyDescriptor(attributes);
-  // Note: no need to call FromPropertyDescriptor(desc), as we represent
-  // "internal" property descriptors as proper Objects from the start
-  for (var name in attributes) {
-    if (!isStandardAttribute(name)) {
-      Object.defineProperty(desc, name,
-        { value: attributes[name],
-          writable: true,
-          enumerable: true,
-          configurable: true });
-    }
-  }
-  return desc;
 }
 
 /**
@@ -352,84 +300,6 @@ var prim_preventExtensions =        Object.preventExtensions,
 // of these methods (i.e. the "original" bindings as defined in the spec)
 var Object_isFrozen, Object_isSealed, Object_isExtensible, Object_getPrototypeOf;
 
-/**
- * A property 'name' is fixed if it is an own property of the target.
- */
-function isFixed(name, target) {
-  return ({}).hasOwnProperty.call(target, name);
-}
-function isSealed(name, target) {
-  var desc = Object.getOwnPropertyDescriptor(target, name);
-  if (desc === undefined) { return false; }
-  return !desc.configurable;
-}
-function isSealedDesc(desc) {
-  return desc !== undefined && !desc.configurable;
-}
-
-/**
- * Performs all validation that Object.defineProperty performs,
- * without actually defining the property. Returns a boolean
- * indicating whether validation succeeded.
- *
- * Implementation transliterated from ES5.1 section 8.12.9
- */
-function isCompatibleDescriptor(extensible, current, desc) {
-  if (current === undefined && extensible === false) {
-    return false;
-  }
-  if (current === undefined && extensible === true) {
-    return true;
-  }
-  if (isEmptyDescriptor(desc)) {
-    return true;
-  }
-  if (isEquivalentDescriptor(current, desc)) {
-    return true;
-  }
-  if (current.configurable === false) {
-    if (desc.configurable === true) {
-      return false;
-    }
-    if ('enumerable' in desc && desc.enumerable !== current.enumerable) {
-      return false;
-    }
-  }
-  if (isGenericDescriptor(desc)) {
-    return true;
-  }
-  if (isDataDescriptor(current) !== isDataDescriptor(desc)) {
-    if (current.configurable === false) {
-      return false;
-    }
-    return true;
-  }
-  if (isDataDescriptor(current) && isDataDescriptor(desc)) {
-    if (current.configurable === false) {
-      if (current.writable === false && desc.writable === true) {
-        return false;
-      }
-      if (current.writable === false) {
-        if ('value' in desc && !sameValue(desc.value, current.value)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  if (isAccessorDescriptor(current) && isAccessorDescriptor(desc)) {
-    if (current.configurable === false) {
-      if ('set' in desc && !sameValue(desc.set, current.set)) {
-        return false;
-      }
-      if ('get' in desc && !sameValue(desc.get, current.get)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 // ---- The Notifier handler wrapper around user handlers ----
 
 /**
@@ -438,10 +308,8 @@ function isCompatibleDescriptor(extensible, current, desc) {
  * are checked against the target. Once the proxy becomes non-extensible,
  * invariants w.r.t. non-extensibility are also enforced.
  *
- * @param handler the handler of the direct proxy. The object emulated by
- * this handler is validated against the target object of the direct proxy.
- * Any violations that the handler makes against the invariants
- * of the target will cause a TypeError to be thrown.
+ * @param handler the handler of the direct proxy. Defines notification
+ * traps that get invoked before applying the operation to the wrapped target.
  *
  * Both target and handler must be proper Objects at initialization time.
  */
@@ -452,6 +320,13 @@ function Notifier(target, handler) {
   // - this.handler is set to a handler that throws on all traps
   this.target  = target;
   this.handler = handler;
+}
+
+// used to convert e.g. "onGet" to "get" so we can call Reflect["get"]
+// strip off "on", uncapitalize first letter
+// e.g. onGet -> get, onKeys -> keys, etc.
+function eventToCommand(eventName) {
+  return eventName[2].toLowerCase() + eventName.slice(3);
 }
 
 /**
@@ -469,9 +344,7 @@ function trap(target, handler, onTrapName, trapArgs, realArgs, protectResult) {
   realArgs = realArgs || trapArgs;
   protectResult = protectResult || function(res) { return res; };
 
-  // strip off "on", uncapitalize first letter
-  // e.g. onGet -> get, onKeys -> keys, etc.
-  var trapName = onTrapName[2].toLowerCase() + onTrapName.slice(3);
+  var trapName = eventToCommand(onTrapName);
   
   var trap = handler[onTrapName];
   
@@ -516,11 +389,12 @@ Notifier.prototype = {
          args,
          function (result) {
            if (result !== undefined) {
-             // TODO: actually, returning a copy is good enough,
+             // TODO: actually, returning a (shallow) copy is good enough,
              // the result is already normalized
-             return normalizePropertyDescriptor(result)
+             return normalizePropertyDescriptor(result);
+             // TODO: freeze standard atributes, copy custom attributes?
            } else {
-             return undefined;             
+             return undefined;
            }
          });
   },
@@ -567,19 +441,10 @@ Notifier.prototype = {
    * The pre-trap receives a normalized copy of the actual descriptor.
    */
   defineProperty: function(name, desc) {
-    
-    // TODO(tvcutsem): the current tracemonkey implementation of proxies
-    // auto-completes 'desc', which is not correct. 'desc' should be
-    // normalized, but not completed. Consider:
-    // Object.defineProperty(proxy, 'foo', {enumerable:false})
-    // This trap will receive desc =
-    //  {value:undefined,writable:false,enumerable:false,configurable:false}
-    // This will also set all other attributes to their default value,
-    // which is unexpected and different from [[DefineOwnProperty]].
-    // Bug filed: https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-        
     var normalizedDesc = normalizePropertyDescriptor(desc);
+    // TODO: a shallow copy is enough
     var copy = normalizePropertyDescriptor(normalizedDesc);
+    // TODO: freeze standard atributes, copy custom attributes?
     
     return trap(
       this.target,
@@ -644,7 +509,7 @@ Notifier.prototype = {
       [],
       [],
       function(result) {
-        return Array.prototype.slice.call(result);
+        return Object.freeze(Array.prototype.slice.call(result));
       });
   },
   
@@ -728,8 +593,6 @@ Notifier.prototype = {
   },
   
   /**
-   * The post-trap receives a copy of the returned array.
-   *
    * TODO(tvcutsem) trap return value should change from [string] to iterator.
    */
   enumerate: function() {
@@ -737,29 +600,21 @@ Notifier.prototype = {
       this.target,
       this.handler,
       "onEnumerate",
-      [],
-      [],
-      function(result) {
-        return Array.prototype.slice.call(result);
-      });
+      []);
   },
   
   /**
    * The post-trap receives a copy of the iterator.
+   *
+   * TODO(tvcutsem) this trap is deprecated in favor of an @iterator
+   * public symbol.
    */
   iterate: function() {
     return trap(
       this.target,
       this.handler,
       "onIterate",
-      [],
-      [],
-      function(result) {
-        // TODO: how to make a copy of an iterator, without
-        // actually exhausting the iterator and having to store
-        // the entire collection in-memory?
-        return result;
-      });
+      []);
   },
   
   /**
@@ -773,7 +628,7 @@ Notifier.prototype = {
       [],
       [],
       function(result) {
-        return Array.prototype.slice.call(result);
+        return Object.freeze(Array.prototype.slice.call(result));
       });
   },
   
@@ -1016,9 +871,6 @@ var Reflect = global.Reflect = {
     
     // Implementation transliterated from [[DefineOwnProperty]]
     // see ES5.1 section 8.12.9
-    // this is the _exact same algorithm_ as the isCompatibleDescriptor
-    // algorithm defined above, except that at every place it
-    // returns true, this algorithm actually does define the property.
     var current = Object.getOwnPropertyDescriptor(target, name);
     var extensible = Object.isExtensible(target);
     if (current === undefined && extensible === false) {
@@ -1244,259 +1096,6 @@ var Reflect = global.Reflect = {
     var instance = (Object(proto) === proto) ? Object.create(proto) : {};
     var result = Function.prototype.apply.call(target, instance, args);
     return Object(result) === result ? result : instance;
-  }
-};
-
-// ============= Handler API =============
-// see http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
-
-function forward(name) {
-  return function(/*...args*/) {
-    var args = Array.prototype.slice.call(arguments);
-    return Reflect[name].apply(this, args);
-  };
-}
-
-function Handler() { };
-global.Reflect.Handler = Handler;
-Handler.prototype = {
-  // fundamental traps
-  getOwnPropertyDescriptor: forward("getOwnPropertyDescriptor"),
-  getOwnPropertyNames:      forward("getOwnPropertyNames"),
-  getPrototypeOf:           forward("getPrototypeOf"),
-  defineProperty:           forward("defineProperty"),
-  deleteProperty:           forward("deleteProperty"),
-  preventExtensions:        forward("preventExtensions"),
-  isExtensible:             forward("isExtensible"),
-  apply:                    forward("apply"),
- 
-  // derived traps
-  seal: function(target) {
-    var success = this.preventExtensions(target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      var props = this.getOwnPropertyNames(target);
-      var l = +props.length;
-      for (var i = 0; i < l; i++) {
-        var name = props[i];
-        success = success &&
-          this.defineProperty(target,name,{configurable:false});
-      }
-    }
-    return success;
-  },
-  freeze: function(target) {
-    var success = this.preventExtensions(target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      var props = this.getOwnPropertyNames(target);
-      var l = +props.length;
-      for (var i = 0; i < l; i++) {
-        var name = props[i];
-        var desc = this.getOwnPropertyDescriptor(target,name);
-        desc = normalizeAndCompletePropertyDescriptor(desc);
-        if (isDataDescriptor(desc)) {
-          success = success &&
-            this.defineProperty(target,name,{writable:false,
-                                             configurable:false});
-        } else if (desc !== undefined) {
-          success = success &&
-            this.defineProperty(target,name,{configurable:false});          
-        }
-      }
-    }
-    return success;
-  },
-  isSealed: function(target) {
-    var props = this.getOwnPropertyNames(target);
-    var l = +props.length;
-    for (var i = 0; i < l; i++) {
-      var name = props[i];
-      var desc = this.getOwnPropertyDescriptor(target,name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc.configurable) {
-        return false;
-      }
-    }
-    return !this.isExtensible(target);
-  },
-  isFrozen: function(target) {
-    var props = this.getOwnPropertyNames(target);
-    var l = +props.length;
-    for (var i = 0; i < l; i++) {
-      var name = props[i];
-      var desc = this.getOwnPropertyDescriptor(target,name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (isDataDescriptor(desc)) {
-        if (desc.writable) {
-          return false;
-        }
-      }
-      if (desc.configurable) {
-        return false;
-      }
-    }
-    return !this.isExtensible(target); 
-  },
-  has: function(target, name) {
-    var desc = this.getOwnPropertyDescriptor(target, name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    if (desc !== undefined) {
-      return true;
-    }
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      return false;
-    }
-    return Reflect.has(proto, name);
-  },
-  hasOwn: function(target,name) {
-    var desc = this.getOwnPropertyDescriptor(target,name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    return desc !== undefined;
-  },
-  get: function(target, name, receiver) {
-    receiver = receiver || target;
-    
-    var desc = this.getOwnPropertyDescriptor(target, name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    if (desc === undefined) {
-      var proto = Object.getPrototypeOf(target);
-      if (proto === null) {
-        return undefined;
-      }
-      return Reflect.get(proto, name, receiver);
-    }
-    if (isDataDescriptor(desc)) {
-      return desc.value;
-    }
-    var getter = desc.get;
-    if (getter === undefined) {
-      return undefined;
-    }
-    return desc.get.call(receiver);
-  },
-  set: function(target, name, value, receiver) {
-    // No need to set receiver = receiver || target;
-    // in a trap invocation, receiver should already be set
-    
-    // first, check whether target has a non-writable property
-    // shadowing name on receiver, via the fundamental
-    // getOwnPropertyDescriptor trap
-    var ownDesc = this.getOwnPropertyDescriptor(target, name);
-    ownDesc = normalizeAndCompletePropertyDescriptor(ownDesc);
-    
-    if (ownDesc !== undefined) {
-      if (isAccessorDescriptor(ownDesc)) {
-        var setter = ownDesc.set;
-        if (setter === undefined) return false;
-        setter.call(receiver, value); // assumes Function.prototype.call
-        return true;
-      }
-      // otherwise, isDataDescriptor(ownDesc) must be true
-      if (ownDesc.writable === false) return false;
-      if (receiver === target) {
-        var updateDesc =
-          { value: value,
-            // FIXME: it should not be necessary to describe the following
-            // attributes. Added to circumvent a bug in tracemonkey:
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-            writable:     ownDesc.writable,
-            enumerable:   ownDesc.enumerable,
-            configurable: ownDesc.configurable };
-        Object.defineProperty(receiver, name, updateDesc);
-        return true;
-      } else {
-        if (!Object.isExtensible(receiver)) return false;
-        var newDesc =
-          { value: value,
-            writable: true,
-            enumerable: true,
-            configurable: true };
-        Object.defineProperty(receiver, name, newDesc);
-        return true;
-      }
-    }
-
-    // name is not defined in target, search target's prototype
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      // target was the last prototype, now we know that 'name' is not shadowed
-      // by an existing (accessor or data) property, so we can add the property
-      // to the initial receiver object
-      if (!Object.isExtensible(receiver)) return false;
-      var newDesc =
-        { value: value,
-          writable: true,
-          enumerable: true,
-          configurable: true };
-      Object.defineProperty(receiver, name, newDesc);
-      return true;
-    }
-    // continue the search in target's prototype
-    return Reflect.set(proto, name, value, receiver);
-  },
-  enumerate: function(target) {
-    var trapResult = this.getOwnPropertyNames(target);
-    var l = +trapResult.length;
-    var result = [];
-    for (var i = 0; i < l; i++) {
-      var name = String(trapResult[i]);
-      var desc = this.getOwnPropertyDescriptor(name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc !== undefined && desc.enumerable) {
-        result.push(name);
-      }
-    }
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      return result;
-    }
-    var inherited = Reflect.enumerate(proto);
-    // FIXME: filter duplicates
-    return result.concat(inherited);
-  },
-  iterate: function(target) {
-    var trapResult = this.enumerate(target);
-    var l = +trapResult.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) {
-          throw StopIteration;
-        } else {
-          return trapResult[idx++];
-        }
-      }
-    };
-  },
-  keys: function(target) {
-    var trapResult = this.getOwnPropertyNames(target);
-    var l = +trapResult.length;
-    var result = [];
-    for (var i = 0; i < l; i++) {
-      var name = String(trapResult[i]);
-      var desc = this.getOwnPropertyDescriptor(name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc !== undefined && desc.enumerable) {
-        result.push(name);
-      }
-    }
-    return result;
-  },
-  construct: function(target, args) {
-    var proto = this.get(target, 'prototype', target);
-    var instance;
-    if (Object(proto) === proto) {
-      instance = Object.create(proto);        
-    } else {
-      instance = {};
-    }
-    var res = this.apply(target, instance, args);
-    if (Object(res) === res) {
-      return res;
-    }
-    return instance;
   }
 };
 
