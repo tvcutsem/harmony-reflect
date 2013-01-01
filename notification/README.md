@@ -17,7 +17,9 @@ Pre-trap generic signature:
 Post-trap generic signature:
 `function(target, result) -> void`
 
-API of notification proxy handlers:
+Notification Proxy Handler API
+==============================
+
 ```
 onGetOwnPropertyDescriptor: function(target,name) // post-trap receives copy of the returned descriptor
 onGetOwnPropertyNames:      function(target) // post-trap receives copy of the returned array
@@ -41,7 +43,8 @@ onApply:                    function(target,thisArg,args)
 onConstruct:                function(target,args)
 ```
 
-== Why Notification Proxies? ==
+Why Notification Proxies?
+=========================
 
   * They avoid the need for costly invariant enforcement checks
   * They forward operations automatically (no need for traps to forward manually to the target object)
