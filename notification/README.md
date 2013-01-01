@@ -1,6 +1,6 @@
 Draft implementation of "notification proxies", based on the original (non-direct) Proxy API.
 
-The basic idea was expressed by E. Dean Tribble on the [es-discuss mailing list](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026587.html) (see [this post](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026589.html) for a follow-up).
+The basic idea was expressed by E. Dean Tribble on the [es-discuss mailing list](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026587.html) (see [this post](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026589.html) for a follow-up). The implementation as shown here includes the extra feature of a post-trap which was suggested to me by Mark S. Miller.
 
 The basic idea is as follows:
 
