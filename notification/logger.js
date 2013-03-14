@@ -52,7 +52,8 @@ function logPreAndPost(/*...args*/) {
   var args = Array.prototype.slice.call(arguments);
   indent++;
   log("before", args);
-  return function(target, result) {
+  return function(/*target, ...args, result*/) {
+    var result = arguments[arguments.length-1];
     log("after", result);
     indent--;
   }
@@ -139,7 +140,7 @@ function makeGenericLoggingProxy(target) {
       onGet: function(stash, trapName) {
         if (!(trapName in stash)) {
           stash[trapName] = logPreAndPost.bind(undefined, trapName);
-          return function(tgt, res) {
+          return function(/*...args*/) {
             delete stash[trapName];
           }       
         }

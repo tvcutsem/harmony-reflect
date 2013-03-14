@@ -15,7 +15,10 @@ Pre-trap generic signature:
 `on{Operation}(target, ...args) -> undefined | callable`
 
 Post-trap generic signature:
-`function(target, result) -> void`
+`function(target, ...args, result) -> void`
+
+The post-trap receives all the arguments of the pre-trap, including the result
+of applying the operation to the target object.
 
 Notification Proxy Handler API
 ==============================

@@ -367,7 +367,8 @@ function trap(target, handler, onTrapName, trapArgs, realArgs, protectResult) {
     if (typeof postTrap !== "function") {
       throw new TypeError(trapName + " post-trap is not callable: "+postTrap);
     }
-    postTrap.call(handler, target, protectResult(result));
+    tTrapArgs.push(protectResult(result)); // add result as last argument
+    postTrap.apply(handler, tTrapArgs);
   }
   return result;
 }
