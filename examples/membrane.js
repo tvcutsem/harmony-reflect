@@ -25,7 +25,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is membranes using Notification Proxies
+ * The Original Code is membranes using Direct Proxies
  *
  * The Initial Developer of the Original Code is
  * Tom Van Cutsem, Vrije Universiteit Brussel.
@@ -38,8 +38,8 @@
 
 // ----------------------------------------------------------------------------
 
-// requires Notification Proxies
-// load('notify-reflect.js') before using
+// requires Direct Proxies
+// load('reflect.js') before using
  
 (function(exports){
   "use strict";
@@ -104,7 +104,7 @@
   // == The interesting stuff ==
 
   /**
-   * A revocable membrane abstraction expressed using Notification Proxies.
+   * A revocable membrane abstraction expressed using Direct Proxies.
    *
    * @author tvcutsem
    *
@@ -159,17 +159,15 @@
     In the above drawing, the DryToWetProxy is a proxy for the WetRealTarget,
     but the "target" of the Proxy abstraction is DryShadowTarget.
 
-    In every pre-trap, the state of the DryShadowTarget is "synchronized" with
-    that of the WetRealTarget. When the notification proxy next forwards the
+    Before the DryToWetProxy forwards the intercepted operation to
+    WetRealTarget, the state of the DryShadowTarget is "synchronized" with
+    that of the WetRealTarget. When the proxy next forwards the
     intercepted operation to the DryShadowTarget, the shadow will return the
     appropriate result.
 
     If the intercepted operation is supposed to side-effect the target, then
-    a post-trap is registered that propagates the update from the
+    after the operation was forwarded, the proxy propagates the update from the
     DryShadowTarget to the WetRealTarget.
-
-    If the intercepted operation does not side-effect the target, then no
-    post-trap is required and the pre-trap simply returns undefined.
 
     Throughout the remainder of this code, we use the naming prefix "wet" or "dry"
     consistently as a sort of type annotation to identify the provenance of the
@@ -223,19 +221,19 @@
 
         wetToDryWrapper = new Proxy(wetShadowTarget, {
 
-          onGetOwnPropertyDescriptor: function(wetShadowTarget, name) {
+          getOwnPropertyDescriptor: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return undefined;
+            return Reflect.getOwnPropertyDescriptor(wetShadowTarget, name);
           },
 
-          onGetOwnPropertyNames: function(wetShadowTarget) {
+          getOwnPropertyNames: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             copyAll(dryTarget, wetShadowTarget, dryToWet);
-            return undefined;
+            return Reflect.getOwnPropertyNames(wetShadowTarget);
           },
 
-          onGetPrototypeOf: function(wetShadowTarget) {
+          getPrototypeOf: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             // if non-standard __proto__ is available, use it to synchronize the prototype
             // as it may have changed since wetShadowTarget was first created
@@ -248,64 +246,60 @@
                 // can't redefine non-configurable property '__proto__'
               }
             }
-            return undefined;
+            return Reflect.getPrototypeOf(wetShadowTarget);
           },
 
-          onDefineProperty: function(wetShadowTarget, name, wetDesc) {
+          defineProperty: function(wetShadowTarget, name, wetDesc) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return function(wetShadowTarget, name, wetDesc, success) {
-              if (success) {
-                copy(wetShadowTarget, dryTarget, name, wetToDry);
-              }
-            };
+            var success = Reflect.defineProperty(wetShadowTarget, name, wetDesc);
+            if (success) {
+              copy(wetShadowTarget, dryTarget, name, wetToDry);
+            }
+            return success;
           },
 
-          onDeleteProperty: function(wetShadowTarget, name) {
+          deleteProperty: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return function(wetShadowTarget, name, success) {
-              if (success) {
-                copy(wetShadowTarget, dryTarget, name, wetToDry);
-              }
-            };
+            var success = Reflect.deleteProperty(wetShadowTarget, name);
+            if (success) {
+              copy(wetShadowTarget, dryTarget, name, wetToDry);
+            }
+            return success;
           },
 
-          onPreventExtensions: function(wetShadowTarget) {
+          preventExtensions: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             copyAll(dryTarget, wetShadowTarget, dryToWet);
             Object.preventExtensions(dryTarget);
-            return function(wetShadowTarget, success) {
-              // preventExtensions shouldn't fail on the shadow since
-              // it's a normal, non-proxy object
-              assert(success);
-            };
+            return Reflect.preventExtensions(wetShadowTarget);
           },
 
-          onIsExtensible: function(wetShadowTarget) {
+          isExtensible: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             if (!Object.isExtensible(dryTarget)) {
               copyAll(dryTarget, wetShadowTarget, dryToWet);
               Object.preventExtensions(wetShadowTarget);
             }
-            return undefined;
+            return Reflect.isExtensible(wetShadowTarget);
           },
           
           // FIXME: skipped onFreeze, onSeal, onIsFrozen, onIsSealed
 
-          onHas: function(wetShadowTarget, name) {
+          has: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return undefined;
+            return Reflect.has(wetShadowTarget, name);
           },
 
-          onHasOwn: function(wetShadowTarget, name) {
+          hasOwn: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return undefined;
+            return Reflect.hasOwn(wetShadowTarget, name);
           },
 
-          onGet: function(wetShadowTarget, name, wetReceiver) {
+          get: function(wetShadowTarget, name, wetReceiver) {
             if (revoked) throw new Error("revoked");
             // How does wetReceiver get wrapped?
             //   - assume dryTarget.name is an accessor
@@ -314,42 +308,39 @@
             //   - the wrapped accessor's "get" function will be a function proxy...
             //   - ... which does the wrapping when it gets applied
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return undefined;
-                // post-trap: function(wetShadowTarget, name, wetReceiver, wetResult) {}
-                // note: return value is already 'wet', as it comes from
-                // accessing a property on the wetShadowTarget
+            return Reflect.get(wetShadowTarget, name, wetReceiver);
           },
 
-          onSet: function(wetShadowTarget, name, val, wetReceiver) {
+          set: function(wetShadowTarget, name, val, wetReceiver) {
             if (revoked) throw new Error("revoked");
             copy(dryTarget, wetShadowTarget, name, dryToWet);
-            return function(wetShadowTarget, name, val, wetReceiver, success) {
-              if (success) {
-                copy(wetShadowTarget, dryTarget, name, wetToDry);            
-              }
+            var success = Reflect.set(wetShadowTarget, name, val, wetReceiver);            
+            if (success) {
+              copy(wetShadowTarget, dryTarget, name, wetToDry);            
             }
+            return success;
           },
 
-          onEnumerate: function(wetShadowTarget) {
+          enumerate: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             copyAll(dryTarget, wetShadowTarget, dryToWet);
-            return undefined;
+            return Reflect.enumerate(wetShadowTarget);
           },
 
-          onKeys: function(wetShadowTarget) {
+          keys: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
             copyAll(dryTarget, wetShadowTarget, dryToWet);
-            return undefined;
+            return Reflect.keys(wetShadowTarget);
           },
 
-          onApply: function(wetShadowTarget, wetThisArg, wetArgs) {
+          apply: function(wetShadowTarget, wetThisArg, wetArgs) {
             if (revoked) throw new Error("revoked");
-            return undefined;
+            return Reflect.apply(wetShadowTarget, wetThisArg, wetArgs);
           },
 
-          onConstruct: function(wetShadowTarget, wetArgs) {
+          construct: function(wetShadowTarget, wetArgs) {
             if (revoked) throw new Error("revoked");
-            return undefined;
+            return Reflect.construct(wetShadowTarget, wetArgs);
           }
 
         }); // end wetToDryWrapper = new Proxy(...)
@@ -390,7 +381,7 @@
 
   // trivial unit test, see ../test/membrane_test.js for more
   function testMembrane() {
-    load('notify-reflect.js');
+    load('../reflect.js');
     var wetTarget = {x: {y:2}};
     var membrane = makeMembrane(wetTarget);
     var dryProxy = membrane.target;
