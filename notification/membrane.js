@@ -19,6 +19,9 @@
  * Inspired by the original membrane example code by Mark S. Miller:
  * http://wiki.ecmascript.org/doku.php?id=harmony:proxies#an_identity-preserving_membrane
  *
+ * For a detailed rationale of this membrane design, and the interaction
+ * with ES5 invariants, see http://soft.vub.ac.be/Publications/2013/vub-soft-tr-13-03.pdf
+ *
  * @author tvcutsem
  */
 
@@ -354,13 +357,13 @@
     var dryToWetRef = {val:null};
     var wetToDryRef = {val:null};
 
-    dryToWetRef.val =
-      dryToWetMaker(dryToWetCache, wetToDryCache, dryToWetRef, wetToDryRef);
+    dryToWetRef.val = dryToWetMaker(dryToWetCache, wetToDryCache,
+                                    dryToWetRef, wetToDryRef);
     
     // note the reversed order of wetToDry and dryToWet:
     
-    wetToDryRef.val =
-      dryToWetMaker(wetToDryCache, dryToWetCache, wetToDryRef, dryToWetRef);
+    wetToDryRef.val = dryToWetMaker(wetToDryCache, dryToWetCache,
+                                    wetToDryRef, dryToWetRef);
 
     return {
       target: wetToDryRef.val(initWetTarget),
