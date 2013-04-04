@@ -1,10 +1,10 @@
-This is a shim for the ECMAScript-Harmony [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
+This is a shim for the ECMAScript 6 [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
 
 In a browser, after loading
 
     <script src="reflect.js"></script>
 
-a global object `Reflect` is defined that contains the functions from the ES-Harmony `reflect` module (see below).
+a global object `Reflect` is defined that contains the functions from the ES6 `reflect` module (see below).
 
 The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) spec. To create such a proxy, call:
 
@@ -59,15 +59,11 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Date.prototype.toString
     Proxy
 
-Issues
-======
+Examples
+========
 
-See the list of [open issues](https://github.com/tvcutsem/harmony-reflect/issues).
+The [examples](https://github.com/tvcutsem/harmony-reflect/tree/master/examples) directory contains a number of examples demonstrating the use of proxies:
 
-Next steps
-==========
-
-  *  Provide fallback behavior for part of the API, for environments without Proxy or WeakMap support.
-  *  More tests.
-  *  Switch to qunit or other unit testing framework.
-  *  Add example uses of proxies (e.g. membranes)
+  * membranes: transitive wrappers to separate whole sub-graphs.
+  * observer: a self-hosted implementation of the ES7 Object.observe notification mechanism.
+  * profiler: a simple profiler to collect usage statistics of an object.
