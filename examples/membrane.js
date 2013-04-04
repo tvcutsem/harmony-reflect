@@ -16,6 +16,9 @@
  * A revocable membrane abstraction expressed using Direct Proxies.
  * See the makeMembrane function below for details.
  *
+ * Inspired by the original membrane example code by Mark S. Miller:
+ * http://wiki.ecmascript.org/doku.php?id=harmony:proxies#an_identity-preserving_membrane
+ *
  * @author tvcutsem
  */
 
