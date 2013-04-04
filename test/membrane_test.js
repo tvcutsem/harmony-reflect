@@ -41,12 +41,12 @@
 // test suite works both with membranes implemented using Direct Proxies as
 // well as Notification Proxies
 //  for Direct Proxies, load '../examples/membrane.js'
-//load('../reflect.js');
-//load('../examples/membrane.js');
+load('../reflect.js');
+load('../examples/membrane.js');
 
 //  for Notification Proxies, load '../notification/membrane.js'
-load('../notification/notify-reflect.js');
-load('../notification/membrane.js');
+//load('../notification/notify-reflect.js');
+//load('../notification/membrane.js');
 
 (function(){
   "use strict";
@@ -301,15 +301,42 @@ load('../notification/membrane.js');
     assert(outC === dryC, 'outC === dryC');
   };
   
-  // TODO: test operations other than simple property access/update:
-  // delete, in-operator, for-in, etc.
-
+  TESTS.testDate = function(makeMembrane) {
+    var wetDate = new Date();
+    var membrane = makeMembrane(wetDate);
+    var dryDate = membrane.target;
+    assert(typeof dryDate.getTime() === "number", "dryDate.getTime() returns number");
+  };
+  
+  TESTS.testHasAndDelete = function(makeMembrane) {
+    var wetA = {x:0};
+    var membrane = makeMembrane(wetA);
+    var dryA = membrane.target;
+    
+    assert('x' in dryA, "'x' in dryA");
+    assert(Reflect.hasOwn(dryA,'x'), "Reflect.hasOwn(dryA,'x')");
+    
+    delete dryA.x;
+    
+    assert(!('x' in dryA), "! 'x' in dryA");
+    assert(!Reflect.hasOwn(dryA,'x'), "! Reflect.hasOwn(dryA,'x')");
+  };
+  
+  TESTS.testKeys = function(makeMembrane) {
+    var wetA = {x:0,y:0};
+    var membrane = makeMembrane(wetA);
+    var dryA = membrane.target;
+    
+    var dryKeys = Object.keys(dryA);
+    assert(dryKeys.length === 2, "dryKeys.length === 2");
+  };
+  
   // simple test driver loop
   function runTests() {
     for (var testName in TESTS) {
       print("test: " + testName);
       TESTS[testName](makeMembrane);
-      print("ok");
+      // print("ok");
     }
     print("done");
   }
