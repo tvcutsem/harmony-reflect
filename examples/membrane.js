@@ -168,6 +168,8 @@
     // is used
     var dryToWetMaker = function(dryToWetCache, wetToDryCache, dryToWetRef, wetToDryRef) {
 
+      // This function is called whenever a dry object crosses the membrane
+      // to the wet side. It should convert the dryTarget to its wet counterpart.
       return function(dryTarget) {
 
         if (Object(dryTarget) !== dryTarget) {
@@ -272,7 +274,7 @@
             return Reflect.isExtensible(wetShadowTarget);
           },
           
-          // FIXME: skipped onFreeze, onSeal, onIsFrozen, onIsSealed
+          // FIXME: skipped freeze, seal, isFrozen, isSealed traps
 
           has: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
