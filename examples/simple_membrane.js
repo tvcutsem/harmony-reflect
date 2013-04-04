@@ -1,4 +1,6 @@
 /**
+ * @deprecated: see membrane.js for a more complete implementation of membranes.
+ *
  * A simple membrane that doesn't distinguish between "inward"
  * and "outward" crossing of the membrane.
  *
