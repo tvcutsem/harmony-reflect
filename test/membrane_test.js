@@ -298,7 +298,6 @@ load('../examples/membrane.js');
     assert(Reflect.hasOwn(dryA,'x'), "Reflect.hasOwn(dryA,'x')");
     
     delete dryA.x;
-    
     assert(!('x' in dryA), "! 'x' in dryA");
     assert(!Reflect.hasOwn(dryA,'x'), "! Reflect.hasOwn(dryA,'x')");
   };
@@ -317,7 +316,6 @@ load('../examples/membrane.js');
     for (var testName in TESTS) {
       print("test: " + testName);
       TESTS[testName](makeMembrane);
-      // print("ok");
     }
     print("done");
   }
