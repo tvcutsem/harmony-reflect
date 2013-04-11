@@ -561,6 +561,9 @@ Validator.prototype = {
    * We do this by returning a getter/setter pair that invokes
    * the corresponding traps.
    *
+   * While this hack works for inherited property access, it has some
+   * quirks:
+   *
    * In Firefox, this trap is only called after a prior invocation
    * of the 'has' trap has returned true. Hence, expect the following
    * behavior:
@@ -569,9 +572,31 @@ Validator.prototype = {
    * child[name] // triggers handler.has(target, name)
    * // if that returns true, triggers handler.get(target, name, child)
    * </code>
+   *
+   * On v8, the 'in' operator, when applied to an object that inherits
+   * from a proxy, will call getPropertyDescriptor and walk the proto-chain.
+   * That calls the below getPropertyDescriptor trap on the proxy. The
+   * result of the 'in'-operator is then determined by whether this trap
+   * returns undefined or a property descriptor object. That is why
+   * we first explicitly trigger the 'has' trap to determine whether
+   * the property exists.
+   *
+   * This has the side-effect that when enumerating properties on
+   * an object that inherits from a proxy in v8, only properties
+   * for which 'has' returns true are returned: 
+   *
+   * <code>
+   * var child = Object.create(Proxy(target, handler));
+   * for (var prop in child) {
+   *   // only enumerates prop if (prop in child) returns true
+   * }
+   * </code>
    */
-  getPropertyDescriptor: function(name) {
+  getPropertyDescriptor: function(name) {    
     var handler = this;
+    
+    if (!handler.has(name)) return undefined;
+    
     return {
       get: function() {
         return handler.get(this, name);

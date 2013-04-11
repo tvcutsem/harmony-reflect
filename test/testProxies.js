@@ -650,18 +650,17 @@ load('../reflect.js');
         return true;      
       },
       enumerate: function(tgt) {
-        return ['a'];
+        return ['foo'];
       }
     });
     child = Object.create(proxy);
     assert('foo' in child, 'invoking inherited has');
-    // FIXME: fails on v8: no has() trap invoked
     assert(!('bar' in child), 'invoking inherited has on non-existent prop');
     assert(child['foo'] === 'foo', 'invoking inherited get');
     assert((child['foo'] = 42) === 42, 'invoking inherited set');
     var props = [];
     for (var p in child) { props.push(p); }
-    assert(props.length === 1 && props[0] === 'a', 'invoking inherited enumerate');
+    assert(props.length === 1 && props[0] === 'foo', 'invoking inherited enumerate');
   }
 
   function testFunctions() {
