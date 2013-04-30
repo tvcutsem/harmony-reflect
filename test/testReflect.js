@@ -283,6 +283,17 @@ function test() {
                              [1,2,3]).x === 1, 'construct this');    
   }());
   
+  // test whether proxies for arrays are treated as arrays
+  (function(){
+    var p = Proxy([], {}); // a proxy for an array
+    assert(Object.prototype.toString.call(p) === '[object Array]',
+           'toString(p) = [object Array]');
+    assert(Array.isArray(p), 'Array.isArray(p)');
+    // below test fails because JSON.stringify uses a [[Class]] check
+    // to test whether p is an array, and we can't intercept that
+    // assert(Array.isArray(JSON.parse(JSON.stringify(p))), 'JSON stringify array');
+  }());
+  
 }
 
 if (typeof window === "undefined") {

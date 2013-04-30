@@ -62,8 +62,11 @@
  //  - Object.getPrototypeOf
  //  - Object.prototype.valueOf
  //  - Object.prototype.isPrototypeOf
+ //  - Object.prototype.toString
  //  - Object.getOwnPropertyDescriptor
  //  - Function.prototype.toString
+ //  - Date.prototype.toString
+ //  - Array.isArray
  //  - Proxy
  // Adds new globals:
  //  - Reflect
@@ -342,7 +345,8 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_isFrozen =                 Object.isFrozen,
     prim_getPrototypeOf =           Object.getPrototypeOf,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
-    prim_defineProperty =           Object.defineProperty;
+    prim_defineProperty =           Object.defineProperty,
+    prim_isArray =                  Array.isArray;
 
 // these will point to the patched versions of the respective methods on
 // Object. They are used within this module as the "intrinsic" bindings
@@ -1463,10 +1467,21 @@ Object.prototype.valueOf =
   makeUnwrapping0ArgMethod(Object.prototype.valueOf);
 Object.prototype.isPrototypeOf =
   makeUnwrapping1ArgMethod(Object.prototype.isPrototypeOf);
+Object.prototype.toString =
+  makeUnwrapping0ArgMethod(Object.prototype.toString);
 Function.prototype.toString =
   makeUnwrapping0ArgMethod(Function.prototype.toString);
 Date.prototype.toString =
   makeUnwrapping0ArgMethod(Date.prototype.toString);
+  
+Array.isArray = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return Array.isArray(vHandler.target);
+  } else {
+    return prim_isArray(subject);
+  }  
+}
 
 // ============= Reflection module =============
 // see http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
