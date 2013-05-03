@@ -32,60 +32,43 @@ load('../examples/membrane.js');
 (function(){
   "use strict";
   
-  var ARR_SIZE = 1000;
-  
-  function wrappedArrayLoop(wetArray, repeats) {
-    
-    for (var n = 0; n < repeats; n++) {
-      
-      var membrane = makeMembrane(wetArray);
-      var dryArray = membrane.target;
-
-      var total = 0;
-      for (var i = 0; i < wetArray.length; i++) {
-        var dryElt = dryArray[i];
-        total += dryElt.nth;
-      }
-      
+  // initialize an array [0,1,2,3,...,size-1]
+  // f is either the identity function or Object.freeze
+  function buildArray(size, f) {
+    var arr = new Array(size);
+    for (var i = 0; i < size; i++) {
+      arr[i] = f({nth: i});
     }
-    
-    return total;
+    return f(arr);
   }
   
   // benchmark 1: wrap a large array in a membrane, then
   // iterate over all of the elements from outside the membrane
   // this will create a membrane wrapper per retrieved element,
   // and tests the speed of property retrieval through a membrane
-  function timeWrappedArrayLoop(repeats) {
-    var wetArray = new Array(ARR_SIZE);
-    for (var i = 0; i < ARR_SIZE; i++) {
-      wetArray[i] = {nth: i};
-    }
+  function timeWrappedArrayLoop(size, repeats, f) {
+    var wetArray = buildArray(size, f);
     
     var start = +(new Date());
     for (var n = 0; n < repeats; n++) {
-      wrappedArrayLoop(wetArray, repeats); 
+      
+      (function(){
+        var membrane = makeMembrane(wetArray);
+        var dryArray = membrane.target;
+
+        var total = 0;
+        for (var i = 0; i < wetArray.length; i++) {
+          var dryElt = dryArray[i];
+          total += dryElt.nth;
+        }
+        return total;
+      }());
+      
     }
-    var elapsed = +(new Date()) - start;
-    return elapsed / repeats;
-  }
-  
-  // benchmark 2: same as benchmark 1, but with a frozen array
-  function timeWrappedFrozenArrayLoop(repeats) {
-    var wetArray = new Array(ARR_SIZE);
-    for (var i = 0; i < ARR_SIZE; i++) {
-      wetArray[i] = Object.freeze({nth: i});
-    }
-    Object.freeze(wetArray);
     
-    var start = +(new Date());
-    for (var n = 0; n < repeats; n++) {
-      wrappedArrayLoop(wetArray, repeats); 
-    }
     var elapsed = +(new Date()) - start;
     return elapsed / repeats;
   }
-  
   
   function genTree(depth, f) {
     return f({
@@ -102,12 +85,12 @@ load('../examples/membrane.js');
   }
   
   // benchmark 3: build a balanced binary tree of depth d,
-  // wrap it in a membrane, then do an in-order tree-walk
+  // wrap it in a membrane, then do a post-order tree-walk
   // over the tree from outside the membrane.
   // On each tree node, invoke a method. This tests both property
   // retrieval and cross-membrane method calls
-  function timeTree(repeats, depth) {
-    var wetRoot = genTree(depth, function(x) { return x; });
+  function timeTree(repeats, depth, f) {
+    var wetRoot = genTree(depth, f);
     var membrane = makeMembrane(wetRoot);
     var dryRoot = membrane.target;
     var total;
@@ -122,27 +105,17 @@ load('../examples/membrane.js');
     return elapsed / repeats;
   }
 
+  var ARR_SIZ = 1000;  // array of length 1000
+  var TREE_DEPTH = 10; // tree of depth 10 = 1023 nodes (2^10 -1)
+  var identity = function(x) { return x; };
+
+  var t1 = timeWrappedArrayLoop(ARR_SIZ, 10, identity);  
+  // benchmark 2: same as 1, but with a deep-frozen array
+  var t2 = timeWrappedArrayLoop(ARR_SIZ, 10, Object.freeze);
+  
+  var t3 = timeTree(TREE_DEPTH, 10, identity);  
   // benchmark 4: same as 3, but with a deep-frozen tree
-  function timeFrozenTree(repeats, depth) {
-    var wetRoot = genTree(depth, Object.freeze);
-    var membrane = makeMembrane(wetRoot);
-    var dryRoot = membrane.target;
-    var total;
-    
-    var start = +(new Date());
-    for (var n = 0; n < repeats; n++) {
-      
-      total = traverse(dryRoot);
-      
-    }
-    var elapsed = +(new Date()) - start;
-    return elapsed / repeats;
-  }
-
-  var t1 = timeWrappedArrayLoop(10);  
-  var t2 = timeWrappedFrozenArrayLoop(10);
-  var t3 = timeTree(10, 10);
-  var t4 = timeFrozenTree(10, 10);
+  var t4 = timeTree(TREE_DEPTH, 10, Object.freeze);
   
   print('          array loop: ' + t1);
   print('   frozen array loop: ' + t2);
