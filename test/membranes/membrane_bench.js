@@ -21,15 +21,15 @@
  * @author tvcutsem
  */
 
-//  for Direct Proxies, load '../examples/membrane.js'
-load('../reflect.js');
-load('../examples/membrane.js');
+//  for Direct Proxies, load:
+//load('../../reflect.js');
+//load('../../examples/membrane.js');
 
-//  for Notification Proxies, load '../notification/membrane.js'
-//load('../notification/notify-reflect.js');
-//load('../notification/membrane.js');
+//  for Notification Proxies, load:
+load('../../notification/notify-reflect.js');
+load('../../notification/membrane.js');
 
-(function(){
+(function(global){
   "use strict";
   
   // initialize an array [0,1,2,3,...,size-1]
@@ -105,21 +105,27 @@ load('../examples/membrane.js');
     return elapsed / repeats;
   }
 
-  var ARR_SIZ = 1000;  // array of length 1000
-  var TREE_DEPTH = 10; // tree of depth 10 = 1023 nodes (2^10 -1)
-  var identity = function(x) { return x; };
+  global.runBench = function() {
+    var ARR_SIZ = 1000;  // array of length 1000
+    var TREE_DEPTH = 10; // tree of depth 10 = 1023 nodes (2^10 -1)
+    var identity = function(x) { return x; };
 
-  var t1 = timeWrappedArrayLoop(ARR_SIZ, 10, identity);  
-  // benchmark 2: same as 1, but with a deep-frozen array
-  var t2 = timeWrappedArrayLoop(ARR_SIZ, 10, Object.freeze);
+    var t1 = timeWrappedArrayLoop(ARR_SIZ, 10, identity);  
+    // benchmark 2: same as 1, but with a deep-frozen array
+    var t2 = timeWrappedArrayLoop(ARR_SIZ, 10, Object.freeze);
+
+    var t3 = timeTree(TREE_DEPTH, 10, identity);  
+    // benchmark 4: same as 3, but with a deep-frozen tree
+    var t4 = timeTree(TREE_DEPTH, 10, Object.freeze);
+
+    print('          array loop: ' + t1);
+    print('   frozen array loop: ' + t2);
+    print('       tree traverse: ' + t3);
+    print('frozen tree traverse: ' + t4);
+  }
   
-  var t3 = timeTree(TREE_DEPTH, 10, identity);  
-  // benchmark 4: same as 3, but with a deep-frozen tree
-  var t4 = timeTree(TREE_DEPTH, 10, Object.freeze);
+  if (typeof window === "undefined") {
+    runBench();
+  }
   
-  print('          array loop: ' + t1);
-  print('   frozen array loop: ' + t2);
-  print('       tree traverse: ' + t3);
-  print('frozen tree traverse: ' + t4);
-  
-}());
+}(this));

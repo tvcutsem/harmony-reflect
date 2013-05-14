@@ -22,14 +22,14 @@
  */
 
 //  for Direct Proxies, load '../examples/membrane.js'
-load('../reflect.js');
-load('../examples/membrane.js');
+load('../../reflect.js');
+load('../../examples/membrane.js');
 
 //  for Notification Proxies, load '../notification/membrane.js'
-//load('../notification/notify-reflect.js');
-//load('../notification/membrane.js');
+//load('../../notification/notify-reflect.js');
+//load('../../notification/membrane.js');
 
-(function(){
+(function(global){
   "use strict";
   
   function assert(b, reason) {
@@ -312,7 +312,7 @@ load('../examples/membrane.js');
   };
   
   // simple test driver loop
-  function runTests() {
+  global.runTests = function() {
     for (var testName in TESTS) {
       print("test: " + testName);
       TESTS[testName](makeMembrane);
@@ -320,6 +320,9 @@ load('../examples/membrane.js');
     print("done");
   }
 
-  runTests();
+  // run tests automatically in headless mode
+  if (typeof window === "undefined") {
+    global.runTests();
+  }
   
-}());
+}(this));
