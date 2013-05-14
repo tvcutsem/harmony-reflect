@@ -88,6 +88,11 @@
     });
   }
 
+  function isConfigurable(obj, name) {
+    var desc = Reflect.getOwnPropertyDescriptor(obj, name);
+    return desc === undefined || desc.configurable === true;
+  }
+
   // == The interesting stuff ==
 
   /**
@@ -163,7 +168,7 @@
     ****************************************************************************/
 
     var revoked = false; // is the membrane revoked yet?
-
+    
     // on first read, it may help to skip down below to see how this function
     // is used
     var dryToWetMaker = function(dryToWetCache, wetToDryCache, dryToWetRef, wetToDryRef) {
@@ -212,12 +217,27 @@
 
           getOwnPropertyDescriptor: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (Object.isExtensible(wetShadowTarget) &&
+                isConfigurable(dryTarget, name)) {
+              return dryToWet(dryDesc);
+            }
+            
+            // general case:
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             return Reflect.getOwnPropertyDescriptor(wetShadowTarget, name);
           },
 
           getOwnPropertyNames: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (Object.isExtensible(wetShadowTarget)) {
+              return Reflect.getOwnPropertyNames(dryTarget);
+            }
+            
+            // general case:
             copyAll(dryTarget, wetShadowTarget, dryToWet);
             return Reflect.getOwnPropertyNames(wetShadowTarget);
           },
@@ -228,18 +248,24 @@
             // as it may have changed since wetShadowTarget was first created
             if (({}).__proto__ !== undefined) {
               var dryProto = Object.getPrototypeOf(dryTarget);
-              try {
-                wetShadowTarget.__proto__ = dryToWet(dryProto);
-              } catch (e) {
-                // fails on FF with TypeError:
-                // can't redefine non-configurable property '__proto__'
-              }
+              // Note: using [[Set]] instead of [[DefineOwnProperty]] by executing:
+              //  wetShadowTarget.__proto__ = ...;
+              // fails on spidermonkey/firefox
+              Object.defineProperty(wetShadowTarget, '__proto__', dryToWet(dryProto));
             }
             return Reflect.getPrototypeOf(wetShadowTarget);
           },
 
           defineProperty: function(wetShadowTarget, name, wetDesc) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (Object.isExtensible(wetShadowTarget) &&
+                wetDesc.configurable === true) {
+              return Reflect.defineProperty(dryTarget, name, wetToDry(wetDesc));    
+            }
+            
+            // general case:
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             var success = Reflect.defineProperty(wetShadowTarget, name, wetDesc);
             if (success) {
@@ -250,6 +276,13 @@
 
           deleteProperty: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (isConfigurable(dryTarget, name)) {
+              return Reflect.deleteProperty(dryTarget, name);
+            }
+            
+            // general case:
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             var success = Reflect.deleteProperty(wetShadowTarget, name);
             if (success) {
@@ -278,18 +311,42 @@
 
           has: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (Object.isExtensible(wetShadowTarget) &&
+                isConfigurable(dryTarget, name)) {
+              return Reflect.has(dryTarget, name);
+            }
+            
+            // general case:
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             return Reflect.has(wetShadowTarget, name);
           },
 
           hasOwn: function(wetShadowTarget, name) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (Object.isExtensible(wetShadowTarget) &&
+                isConfigurable(dryTarget, name)) {
+              return Reflect.hasOwn(dryTarget, name);
+            }
+            
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             return Reflect.hasOwn(wetShadowTarget, name);
           },
 
           get: function(wetShadowTarget, name, wetReceiver) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (isConfigurable(dryTarget, name)) {
+              // TODO: catch and wrap exceptions thrown from getter?
+              return dryToWet(Reflect.get(dryTarget, name, wetToDry(wetReceiver)));
+            }
+            
+            // general case:
+            
             // How does wetReceiver get wrapped?
             //   - assume dryTarget.name is an accessor
             //   - then the following line will define wetShadowTarget.name
@@ -302,6 +359,15 @@
 
           set: function(wetShadowTarget, name, val, wetReceiver) {
             if (revoked) throw new Error("revoked");
+            
+            // no-invariant case:
+            if (isConfigurable(dryTarget, name)) {
+              // TODO: catch and wrap exceptions thrown from setter?
+              return dryToWet(Reflect.set(dryTarget, name,
+                                          wetToDry(val), wetToDry(wetReceiver)));
+            }
+            
+            // general case:
             copy(dryTarget, wetShadowTarget, name, dryToWet);
             var success = Reflect.set(wetShadowTarget, name, val, wetReceiver);            
             if (success) {
@@ -312,12 +378,22 @@
 
           enumerate: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
+            
+            if (Object.isExtensible(wetShadowTarget)) {
+              return Reflect.enumerate(dryTarget);
+            }
+            
             copyAll(dryTarget, wetShadowTarget, dryToWet);
             return Reflect.enumerate(wetShadowTarget);
           },
 
           keys: function(wetShadowTarget) {
             if (revoked) throw new Error("revoked");
+            
+            if (Object.isExtensible(wetShadowTarget)) {
+              return Reflect.keys(dryTarget);
+            }
+            
             copyAll(dryTarget, wetShadowTarget, dryToWet);
             return Reflect.keys(wetShadowTarget);
           },
