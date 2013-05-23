@@ -24,10 +24,12 @@ API
 
 This module exports a single object named `Reflect`.
 
-The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects: [overview of all supported traps](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/traps.md).
+The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects:
 
-See the [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) and [Handler API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md) docs for further details.
-
+  * Overview of all [supported traps](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/traps.md) on proxies
+  * The [Reflect API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md) 
+  * The Proxy [Handler API](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/handler_api.md)
+  
 Compatibility
 =============
 
