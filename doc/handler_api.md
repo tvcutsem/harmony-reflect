@@ -198,7 +198,25 @@ This trap intercepts the following operations:
 
 The proxy throws a TypeError if:
 
-  *  The return value of the trap is not the actual prototype link of the wrapped target object. This restriction is imposed to ensure that `getPrototypeOf` cannot by itself be used to introduce a mutable prototype link.
+  *  The target object is non-extensible and the return value of the trap is not the actual prototype link of the wrapped target object. This restriction is imposed to ensure that `getPrototypeOf` cannot by itself be used to introduce a mutable prototype link on non-extensible objects.
+
+## setPrototypeOf(target, newProto)
+
+Called when the proxy's prototype is mutated. Supported only on platforms
+with mutable `__proto__` (and where `__proto__` is an accessor on `Object.prototype`).
+
+This trap should return a boolean indicating whether or not the prototype
+was successfully modified.
+
+This trap intercepts the following operations:
+
+  *  `Object.setPrototypeOf(proxy)`
+  *  `Reflect.setPrototypeOf(proxy)`
+  *  `Object.getOwnPropertyDescriptor(Object.prototype,'__proto__').set.call(proxy,newProto)`
+
+The proxy throws a TypeError if:
+
+  *  The target object is non-extensible, the trap returns true, and the target object's prototype does not match the `newProto` argument.
   
 ## deleteProperty(target, name)
 

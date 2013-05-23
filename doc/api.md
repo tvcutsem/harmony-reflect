@@ -111,6 +111,16 @@ Returns the prototype link of the `target` object.
 Same as the ES5 built-in Object.getPrototypeOf(target).
 If `target` is a proxy, calls that proxy's `getPrototypeOf` trap.
 
+## Reflect.setPrototypeOf(target, newProto)
+
+Mutates the prototype link of the `target` object and sets it to `newProto`. One can only set the prototype of extensible `target` objects. The operation will throw if `target` is non-extensible. This operation returns a boolean success value, indicating whether the operation succeeded.
+
+This operation only works on platforms that support the non-standard `__proto__`
+property, the property is mutable, and is represented as an accessor property on
+`Object.prototype`. On these platforms, this library will also define a corresponding `Object.setPrototypeOf(target, newProto)` function.
+
+If `target` is a proxy, calls that proxy's `setPrototypeOf` trap.
+
 ## Reflect.deleteProperty(target, name)
 
 Attempts to delete the `name` property on `target`. Calling this function is equivalent to performing `delete target[name]`, except that this function returns a boolean that indicates whether or not the deletion was successful.

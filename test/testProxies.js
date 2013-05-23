@@ -96,6 +96,7 @@ load('../reflect.js');
       testSet();
       testTransparentWrappers();
       testRevocableProxies();
+      testSetPrototypeOf();
 
       for (var testName in TESTS) {
         emulatedProps = {};
@@ -761,6 +762,46 @@ load('../reflect.js');
     assertThrows('proxy is revoked', function() { Object.isExtensible(p) });
     assertThrows('proxy is revoked', function() { delete p.x });
     assert(typeof p === 'object', 'typeof still works on revoked proxy');
+  }
+  
+  function testSetPrototypeOf() {
+    var desc = Object.getOwnPropertyDescriptor(Object.prototype,'__proto__');
+    if (desc === undefined || typeof desc.get !== "function") {
+      // setPrototypeOf not supported on this platform
+      assertThrows('setPrototypeOf not supported on this platform',
+                   function() { Object.setPrototypeOf({}, {}); });
+    } else {
+      var parent = {};
+      var child = Object.create(parent);
+      var newParent = {};
+      assert(Object.getPrototypeOf(child) === parent, 'getPrototypeOf before');
+      assert(Object.setPrototypeOf(child, newParent) === child, 'setPrototypeOf return');
+      assert(Object.getPrototypeOf(child) === newParent, 'getPrototypeOf after');
+      
+      assertThrows("can't set prototype on non-extensible object: "+({}),
+                   function() {
+                     Object.setPrototypeOf(Object.preventExtensions({}), {});
+                   });
+      
+      var p = Proxy({}, {
+        setPrototypeOf: function(target, newProto) {
+          assert(newProto === newParent, 'newProto === newParent');
+          return Reflect.setPrototypeOf(target, newProto);
+        }
+      });
+      Object.setPrototypeOf(p, newParent);
+      assert(Object.getPrototypeOf(p) === newParent, 'getPrototypeOf proxy after');
+      
+      assertThrows("prototype value does not match: " + {},
+        function() {
+          var p = Proxy(Object.preventExtensions({}), {
+            setPrototypeOf: function(target, newProto) {
+              return true;
+            }
+          });
+          Object.setPrototypeOf(p, newParent);
+        });
+    }
   }
     
   if (typeof window === "undefined") {

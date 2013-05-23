@@ -431,6 +431,7 @@ function isCompatibleDescriptor(extensible, current, desc) {
   return true;
 }
 
+
 // ---- The Validator handler wrapper around user handlers ----
 
 /**
@@ -875,11 +876,39 @@ Validator.prototype = {
     }
 
     var allegedProto = trap(this.target);
-    var actualProto = Object_getPrototypeOf(this.target);
-    if (!sameValue(allegedProto, actualProto)) {
-      throw new TypeError("prototype value does not match: " + this.target);
+    
+    if (!Object_isExtensible(this.target)) {
+      var actualProto = Object_getPrototypeOf(this.target);
+      if (!sameValue(allegedProto, actualProto)) {
+        throw new TypeError("prototype value does not match: " + this.target);
+      }
     }
-    return actualProto;
+    
+    return allegedProto;    
+  },
+  
+  /**
+   * If target is non-extensible and setPrototypeOf trap returns true,
+   * check whether the trap result corresponds to the target's [[Prototype]]
+   */
+  setPrototypeOf: function(newProto) {
+    var trap = this.getTrap("setPrototypeOf");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.setPrototypeOf(this.target, newProto);
+    }
+
+    var success = trap(this.target, newProto);
+    
+    success = !!success;
+    if (success && !Object_isExtensible(this.target)) {
+      var actualProto = Object_getPrototypeOf(this.target);
+      if (!sameValue(newProto, actualProto)) {
+        throw new TypeError("prototype value does not match: " + this.target);
+      }  
+    }
+    
+    return success;
   },
   
   /**
@@ -1483,6 +1512,44 @@ Array.isArray = function(subject) {
   }  
 }
 
+// setPrototypeOf support on platforms that support __proto__
+
+// patch and extract original __proto__ setter
+var __proto__setter = (function() {
+  var protoDesc = prim_getOwnPropertyDescriptor(Object.prototype,'__proto__');
+  if (protoDesc === undefined ||
+      typeof protoDesc.set !== "function") {
+    return function() {
+      throw new TypeError("setPrototypeOf not supported on this platform");
+    }
+  }
+  
+  prim_defineProperty(Object.prototype, '__proto__', {
+    set: function(newProto) {
+      return Object.setPrototypeOf(this, newProto);
+    }
+  });
+  
+  return protoDesc.set;
+}());
+
+Object.setPrototypeOf = function(target, newProto) {
+  var handler = directProxies.get(target);
+  if (handler !== undefined) {
+    if (handler.setPrototypeOf(newProto)) {
+      return target;
+    } else {
+      throw new TypeError("proxy rejected prototype mutation");
+    }
+  } else {
+    if (!Object_isExtensible(target)) {
+      throw new TypeError("can't set prototype on non-extensible object: " + target);
+    }
+    __proto__setter.call(target, newProto);
+    return target;
+  }
+}
+
 // ============= Reflection module =============
 // see http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
 
@@ -1564,6 +1631,10 @@ var Reflect = global.Reflect = {
   },
   getPrototypeOf: function(target) {
     return Object.getPrototypeOf(target);
+  },
+  setPrototypeOf: function(target, newProto) {
+    Object.setPrototypeOf(target, newProto);
+    return true;
   },
   freeze: function(target) {
     Object.freeze(target);
@@ -1751,6 +1822,7 @@ Handler.prototype = {
   getOwnPropertyDescriptor: forward("getOwnPropertyDescriptor"),
   getOwnPropertyNames:      forward("getOwnPropertyNames"),
   getPrototypeOf:           forward("getPrototypeOf"),
+  setPrototypeOf:           forward("setPrototypeOf"),
   defineProperty:           forward("defineProperty"),
   deleteProperty:           forward("deleteProperty"),
   preventExtensions:        forward("preventExtensions"),
