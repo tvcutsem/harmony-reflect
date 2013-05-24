@@ -1,6 +1,4 @@
-Draft implementation of "notification proxies", based on the original (non-direct) Proxy API.
-
-The basic idea was expressed by E. Dean Tribble on the [es-discuss mailing list](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026587.html) (see [this post](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026589.html) for a follow-up). The implementation as shown here includes the extra feature of a post-trap which was suggested to me by Mark S. Miller.
+Experimental implementation of "notification proxies", based on the original (non-direct) Proxy API. For background info, read my [blog post](http://soft.vub.ac.be/~tvcutsem/invokedynamic/notification-proxies) on Notification Proxies.
 
 The basic idea is as follows:
 
@@ -62,3 +60,8 @@ Why Notification Proxies?
   * They forward operations automatically (no need for traps to forward manually to the target object)
   
 Proxy abstractions that do not want operations to be forwarded automatically (i.e. that want to change arguments or return values) need to make an extra effort. The basic pattern is that such proxies use a fake "shadow" target which they "set-up" in the "pre-trap" and (if necessary) clean-up in the post-trap.
+
+Credit and History
+==================
+
+The basic idea was expressed by E. Dean Tribble on the [es-discuss mailing list](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026587.html) (see [this post](https://mail.mozilla.org/pipermail/es-discuss/2012-November/026589.html) for a follow-up). The implementation as shown here includes the extra feature of a post-trap which was suggested to me by Mark S. Miller.
