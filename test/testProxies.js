@@ -97,6 +97,7 @@ load('../reflect.js');
       testTransparentWrappers();
       testRevocableProxies();
       testSetPrototypeOf();
+      //testInvokeTrap();
 
       for (var testName in TESTS) {
         emulatedProps = {};
@@ -803,6 +804,28 @@ load('../reflect.js');
         });
     }
   }
+  
+  // invoke experiment
+  /*function testInvokeTrap() {
+    // first test whether __noSuchMethod__ is supported
+    
+    var t = {
+      foo: function(x) { return x; }
+    };
+    var p = new Proxy(t, {
+      get: function(tgt, name, rcvr) {
+        print('get ' + name);
+        return undefined; //return Reflect.get(tgt, name, rcvr);
+      },
+      invoke: function(tgt, name, args, rcvr) {
+        print('invoke ' + name);
+        return Reflect.invoke(tgt, name, args, rcvr);        
+      }
+    });
+    
+    print(p.foo(2));
+    
+  }*/
     
   if (typeof window === "undefined") {
     test();

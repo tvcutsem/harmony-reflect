@@ -262,6 +262,29 @@ function test() {
            'set c');
   }());
   
+  // invoke(target : object, name: string, args : array, receiver: object?) -> any
+  /*(function(){
+    var target = {
+      foo: function(x,y) { return x+y; },
+      bar: function() { return this; }
+    };
+    assert(Reflect.invoke(target, "foo", [1,2]) === 3,
+                          'invoke foo');
+    assert(Reflect.invoke(target, "bar", []) === target,
+                          'invoke bar');
+                          
+    var rcvr = {};
+    assert(Reflect.invoke(target, "bar", [], rcvr) === rcvr,
+                          'invoke bar with receiver');
+                          
+    try {
+      Reflect.invoke(target,"baz",[]);
+      assert(false, "invoke baz");
+    } catch (e) {
+      assert(true, "invoke baz");
+    }
+  }());*/
+  
   // apply(target : object, receiver : object?, args : array) -> any
   (function(){
     assert(Reflect.apply(function(x) { return x; },

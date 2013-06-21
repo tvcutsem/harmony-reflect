@@ -42,9 +42,11 @@
  // including support for Proxies. See the draft specification at:
  // http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
  // http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies
+ 
+ // For an implementation of the Handler API, see handlers.js, which implements:
  // http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
  
- // It supersedes the earlier polyfill at:
+ // This implementation supersedes the earlier polyfill at:
  // code.google.com/p/es-lab/source/browse/trunk/src/proxies/DirectProxies.js
 
  // This code was tested on tracemonkey / Firefox 12
@@ -1010,11 +1012,38 @@ Validator.prototype = {
   },
   
   /**
+   * Experimental implementation of the invoke() trap on platforms
+   * that support __noSuchMethod__ (e.g. Spidermonkey/FF).
+   */
+  /*invoke: function(receiver, name, args) {
+    var trap = this.getTrap("invoke");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.invoke(this.target, name, args, receiver);
+    }
+    
+    name = String(name);
+    return trap(this.target, name, args, receiver);
+  },*/
+  
+  /**
    * If name denotes a fixed non-configurable, non-writable data property,
    * check its return value against the previously asserted value of the
    * fixed property.
    */
   get: function(receiver, name) {
+    
+    // experimental support for invoke() trap on platforms that
+    // support __noSuchMethod__
+    /*
+    if (name === '__noSuchMethod__') {
+      var handler = this;
+      return function(name, args) {
+        return handler.invoke(receiver, name, args);
+      }
+    }
+    */
+    
     var trap = this.getTrap("get");
     if (trap === undefined) {
       // default forwarding behavior
@@ -1742,6 +1771,7 @@ var Reflect = global.Reflect = {
     // name is not defined in target, search target's prototype
     var proto = Object.getPrototypeOf(target);
     if (proto === null) {
+      // FIXME: Rev16 change? Cf. https://bugs.ecmascript.org/show_bug.cgi?id=1549
       // target was the last prototype, now we know that 'name' is not shadowed
       // by an existing (accessor or data) property, so we can add the property
       // to the initial receiver object
@@ -1757,6 +1787,17 @@ var Reflect = global.Reflect = {
     // continue the search in target's prototype
     return Reflect.set(proto, name, value, receiver);
   },
+  /*invoke: function(target, name, args, receiver) {
+    receiver = receiver || target;
+    
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.invoke(receiver, name, args);
+    }
+    
+    var fun = Reflect.get(target, name, receiver);
+    return Function.prototype.apply.call(fun, receiver, args);
+  },*/
   enumerate: function(target) {
     var result = [];
     for (var name in target) { result.push(name); };
@@ -1806,6 +1847,7 @@ var Reflect = global.Reflect = {
 };
 
 // ============= Handler API =============
+// !! Deprecated implementation. See handlers.js for an up-to-date implementation.
 // see http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
 
 function forward(name) {
