@@ -40,6 +40,8 @@ The `Reflect` API, with support for proxies, was tested on:
   * spidermonkey shell
   * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
   * `node --harmony` (in node v0.7.8)
+  
+This library does not yet support the `invoke()` trap.
 
 Dependencies
 ============
@@ -59,6 +61,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.defineProperty
     Function.prototype.toString
     Date.prototype.toString
+    Array.isArray
     Proxy
 
 Examples
