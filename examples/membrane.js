@@ -93,6 +93,7 @@
     return desc === undefined || desc.configurable === true;
   }
 
+
   // == The interesting stuff ==
 
   /**
