@@ -41,8 +41,6 @@ The `Reflect` API, with support for proxies, was tested on:
   * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
   * `node --harmony` (in node v0.7.8)
   
-This library does not yet support the `invoke()` trap.
-
 Dependencies
 ============
 
@@ -72,3 +70,11 @@ The [examples](https://github.com/tvcutsem/harmony-reflect/tree/master/examples)
   * membranes: transitive wrappers to separate whole sub-graphs.
   * observer: a self-hosted implementation of the ES7 Object.observe notification mechanism.
   * profiler: a simple profiler to collect usage statistics of an object.
+
+Spec Compatibility
+==================
+  
+This library differs from the draft ECMAScript 6 spec. as follows:
+
+  * No support yet for the `invoke()` trap on proxies.
+  * Still includes `seal()` and `freeze()` as traps on proxies and methods in `Reflect` (ES6 removed them, i.e. calling `Object.seal(proxy)` will instead trigger other traps on the proxy, such as `defineProperty` and `preventExtensions`).
