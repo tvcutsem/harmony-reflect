@@ -1491,13 +1491,27 @@ Object.defineProperty = function(subject, name, desc) {
   }
 };
 
+// returns whether an argument is a reference to an object,
+// which is legal as a WeakMap key.
+function isObject(arg) {
+  var type = typeof arg;
+  return (type === 'object' && arg !== null) || (type === 'function');
+};
+
+// a wrapper for WeakMap.get which returns the undefined value
+// for keys that are not objects (in which case the underlying
+// WeakMap would have thrown a TypeError).
+function safeWeakMapGet(map, key) {
+  return isObject(key) ? map.get(key) : undefined;
+};
+
 // returns a new function of zero arguments that recursively
 // unwraps any proxies specified as the |this|-value.
 // The primitive is assumed to be a zero-argument method
 // that uses its |this|-binding.
 function makeUnwrapping0ArgMethod(primitive) {
   return function builtin() {
-    var vHandler = directProxies.get(this);
+    var vHandler = safeWeakMapGet(directProxies, this);
     if (vHandler !== undefined) {
       return builtin.call(vHandler.target);
     } else {
@@ -1512,7 +1526,7 @@ function makeUnwrapping0ArgMethod(primitive) {
 // that uses its |this|-binding.
 function makeUnwrapping1ArgMethod(primitive) {
   return function builtin(arg) {
-    var vHandler = directProxies.get(this);
+    var vHandler = safeWeakMapGet(directProxies, this);
     if (vHandler !== undefined) {
       return builtin.call(vHandler.target, arg);
     } else {
@@ -1533,7 +1547,7 @@ Date.prototype.toString =
   makeUnwrapping0ArgMethod(Date.prototype.toString);
   
 Array.isArray = function(subject) {
-  var vHandler = directProxies.get(subject);
+  var vHandler = safeWeakMapGet(directProxies, subject);
   if (vHandler !== undefined) {
     return Array.isArray(vHandler.target);
   } else {
