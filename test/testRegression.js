@@ -71,6 +71,33 @@ function test() {
     assert(f.prototype === proto, 'prototype changed via f');
   }());
   
+  (function(){
+    // https://github.com/tvcutsem/harmony-reflect/issues/16
+    assert(({}).toString.apply(1) === '[object Number]',
+           'toString Number');
+           
+    assert(({}).toString.apply(true) === '[object Boolean]',
+           'toString Boolean');
+           
+    assert(({}).toString.apply('asdf') === '[object String]',
+           'toString String');
+           
+    assert(({}).toString.apply(null) === '[object Null]',
+           'toString null');
+           
+    assert(({}).toString.apply(undefined) === '[object Undefined]',
+           'toString undefined');
+           
+    assert(({}).toString.apply([]) === '[object Array]',
+           'toString Array');
+           
+    assert(({}).toString.apply({}) === '[object Object]',
+           'toString Object');
+
+    assert(({}).toString.apply(new Proxy({},{})) === '[object Object]',
+           'toString Proxy');
+  }());
+  
 }
 
 if (typeof window === "undefined") {
