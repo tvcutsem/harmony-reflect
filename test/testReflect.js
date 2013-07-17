@@ -317,6 +317,28 @@ function test() {
     // assert(Array.isArray(JSON.parse(JSON.stringify(p))), 'JSON stringify array');
   }());
   
+  // Rev16 change to [[Set]]. Cf. https://bugs.ecmascript.org/show_bug.cgi?id=1549
+  (function(){
+    var target = {};
+    var receiver = {};
+
+    Reflect.set(target, "foo", 1, receiver);
+    assert(target.foo === undefined, 'target.foo === undefined');
+    assert(receiver.foo === 1, 'receiver.foo === 1'); // new property added to receiver
+
+    Object.defineProperty(receiver, "bar",
+      { value: 0,
+        writable: true,
+        enumerable: false,
+        configurable: true });
+
+    Reflect.set(target, "bar", 1, receiver);
+
+    assert(receiver.bar === 1, 'receiver.bar === 1'); // value of existing receiver property updated
+    assert(Object.getOwnPropertyDescriptor(receiver,"bar").enumerable === false,
+           'enumerability not overridden'); // enumerability was not overridden
+  }());
+  
 }
 
 if (typeof window === "undefined") {
