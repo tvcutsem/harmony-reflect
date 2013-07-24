@@ -1567,6 +1567,16 @@ var __proto__setter = (function() {
     }
   }
   
+  // see if we can actually mutate a prototype with the generic setter
+  // (e.g. Chrome v28 doesn't allow setting __proto__ via the generic setter)
+  try {
+    protoDesc.set.call({},{});
+  } catch (e) {
+    return function() {
+      throw new TypeError("setPrototypeOf not supported on this platform");
+    }
+  }
+  
   prim_defineProperty(Object.prototype, '__proto__', {
     set: function(newProto) {
       return Object.setPrototypeOf(this, newProto);
