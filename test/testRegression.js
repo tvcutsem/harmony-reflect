@@ -98,6 +98,26 @@ function test() {
            'toString Proxy');
   }());
   
+  (function(){
+    // https://github.com/tvcutsem/harmony-reflect/issues/19
+    var a = [1,2];
+    var h = {};
+    var aProxy = Proxy(a, h);
+    var aConcat = [].concat(a);
+    var aProxyConcat = [].concat(aProxy);
+
+    assert(JSON.stringify(aConcat) === "[1,2]", 'aConcat eq [1,2]');
+    assert(JSON.stringify(aProxyConcat) === "[1,2]", 'aProxyConcat eq [1,2]');
+    
+    assert(JSON.stringify([].concat())         === "[]",      'plain concat 1');
+    assert(JSON.stringify([1].concat(2))       === "[1,2]",   'plain concat 2');
+    assert(JSON.stringify([1].concat(2,[3]))   === "[1,2,3]", 'plain concat 3');
+    assert(JSON.stringify([1].concat(2,3))     === "[1,2,3]", 'plain concat 4');    
+    assert(JSON.stringify([1].concat([2],[3])) === "[1,2,3]", 'plain concat 5');
+    assert(JSON.stringify([].concat([]))       === "[]",      'plain concat 6');
+    assert(JSON.stringify([].concat(1))        === "[1]",     'plain concat 7');
+  }());
+  
 }
 
 if (typeof window === "undefined") {

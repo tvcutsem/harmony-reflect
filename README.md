@@ -60,6 +60,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Function.prototype.toString
     Date.prototype.toString
     Array.isArray
+    Array.prototype.concat
     Proxy
 
 Examples
