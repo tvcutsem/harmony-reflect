@@ -1,6 +1,6 @@
 {
   "name": "harmony-reflect",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "ES5 Shim for proposed ECMAScript 6 reflection API",
   "main": "reflect.js",
   "keywords": [
