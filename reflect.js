@@ -1556,6 +1556,14 @@ Array.isArray = function(subject) {
   }  
 };
 
+function isProxyArray(arg) {
+  var vHandler = safeWeakMapGet(directProxies, arg);
+  if (vHandler !== undefined) {
+    return Array.isArray(vHandler.target);
+  }
+  return false;
+}
+
 // Array.prototype.concat internally tests whether one of its
 // arguments is an Array, by checking whether [[Class]] == "Array"
 // As such, it will fail to recognize proxies-for-arrays as arrays.
@@ -1566,7 +1574,7 @@ Array.isArray = function(subject) {
 Array.prototype.concat = function(/*...args*/) {
   var length;
   for (var i = 0; i < arguments.length; i++) {
-    if (Array.isArray(arguments[i])) {
+    if (isProxyArray(arguments[i])) {
       length = arguments[i].length;
       arguments[i] = Array.prototype.slice.call(arguments[i], 0, length);
     }
