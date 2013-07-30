@@ -68,8 +68,8 @@ Examples
 
 The [examples](https://github.com/tvcutsem/harmony-reflect/tree/master/examples) directory contains a number of examples demonstrating the use of proxies:
 
-  * membranes: transitive wrappers to separate whole sub-graphs.
-  * observer: a self-hosted implementation of the ES7 Object.observe notification mechanism.
+  * membranes: wrappers that transitively isolate two object-graphs.
+  * observer: a self-hosted implementation of the ES7 `Object.observe` notification mechanism.
   * profiler: a simple profiler to collect usage statistics of an object.
 
 Spec Compatibility
@@ -79,3 +79,4 @@ This library differs from the draft ECMAScript 6 spec. as follows:
 
   * No support yet for the `invoke()` trap on proxies.
   * Still includes `seal()` and `freeze()` as traps on proxies and methods in `Reflect` (ES6 removed them, i.e. calling `Object.seal(proxy)` will instead trigger other traps on the proxy, such as `defineProperty` and `preventExtensions`).
+  * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`). It is as yet unclear how ES6 will spec these operations in the presence of proxies.
