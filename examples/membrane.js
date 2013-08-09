@@ -222,7 +222,7 @@
             // no-invariant case:
             if (Object.isExtensible(wetShadowTarget) &&
                 isConfigurable(dryTarget, name)) {
-              return dryToWet(dryDesc);
+              return dryToWet(Reflect.getOwnPropertyDescriptor(dryTarget, name));
             }
             
             // general case:
