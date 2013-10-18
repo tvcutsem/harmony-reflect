@@ -43,7 +43,7 @@ See further notes below for details.
   <tr>
     <td>property deletion</td>
     <td>delete proxy.foo<br/>delete proxy['foo']</td>
-    <td>handler.delete(target, 'foo')</td>
+    <td>handler.deleteProperty(target, 'foo')</td>
   </tr>
   <tr>
     <td>property enumeration</td>
