@@ -111,8 +111,12 @@
    * intercepted on a membraned object. Example:
    *
    * wet2dryHandler = {
-   *   onGet: function(wetTarget, name, wetReceiver) -> void
+   *   onGet: function(wetTarget, name, wetReceiver, dryTarget) -> void
    * }
+   *
+   * The parameters of the callback are the same of the corresponding trap,
+   * except the callback takes as an extra last argument the dryTarget
+   * (i.e. the actual value being wrapped)
    *
    * The callback's return value is ignored, but the callback is ran before
    * the membrane forwards the operation to the wrapped target. Thus, a
@@ -194,6 +198,10 @@
         if (Object(dryTarget) !== dryTarget) {
           return dryTarget; // primitives are passed through unwrapped
         }
+        // errors are passed as reconstructed error objects
+        if (dryTarget instanceof Error) {
+          return new Error(''+dryTarget.message);
+        }
 
         var wetToDryWrapper = dryToWetCache.get(dryTarget);
         if (wetToDryWrapper) {
@@ -212,8 +220,7 @@
         var wetShadowTarget;
 
         if (typeof dryTarget === "function") {
-          wetShadowTarget = function() {
-            if (revoked) throw new Error("revoked");
+          wetShadowTarget = function wrapper() {
             var wetArgs = Array.prototype.slice.call(arguments);
             var wetThis = this;
             var dryArgs = wetArgs.map(wetToDry);
@@ -223,6 +230,7 @@
               var wetResult = dryToWet(dryResult);
               return wetResult;
             } catch (dryException) {
+              // DEBUG: throw dryException;
               throw dryToWet(dryException);
             }
           };
@@ -235,7 +243,7 @@
 
           getOwnPropertyDescriptor: function(wetShadowTarget, name) {
             if (handler.onGetOwnPropertyDescriptor) {
-              handler.onGetOwnPropertyDescriptor(wetShadowTarget, name);
+              handler.onGetOwnPropertyDescriptor(wetShadowTarget, name, dryTarget);
             }
             
             // no-invariant case:
@@ -251,7 +259,7 @@
 
           getOwnPropertyNames: function(wetShadowTarget) {
             if (handler.onGetOwnPropertyNames) {
-              handler.onGetOwnPropertyNames(wetShadowTarget);              
+              handler.onGetOwnPropertyNames(wetShadowTarget, dryTarget);              
             }
             
             // no-invariant case:
@@ -266,24 +274,27 @@
 
           getPrototypeOf: function(wetShadowTarget) {
             if (handler.onGetPrototypeOf) {
-              handler.onGetPrototypeOf(wetShadowTarget);              
+              handler.onGetPrototypeOf(wetShadowTarget, dryTarget);              
             }
             
             // if non-standard __proto__ is available, use it to synchronize the prototype
             // as it may have changed since wetShadowTarget was first created
             if (({}).__proto__ !== undefined) {
               var dryProto = Object.getPrototypeOf(dryTarget);
-              // Note: using [[Set]] instead of [[DefineOwnProperty]] by executing:
-              //  wetShadowTarget.__proto__ = ...;
-              // fails on spidermonkey/firefox
-              Object.defineProperty(wetShadowTarget, '__proto__', dryToWet(dryProto));
+              var wetProto = dryToWet(dryProto);
+              if (Object.getPrototypeOf(wetShadowTarget) !== wetProto) {
+                // Note: using [[Set]] instead of [[DefineOwnProperty]] by executing:
+                //  wetShadowTarget.__proto__ = ...;
+                // fails on spidermonkey/firefox
+                Object.defineProperty(wetShadowTarget, '__proto__', wetProto);                
+              }
             }
             return Reflect.getPrototypeOf(wetShadowTarget);
           },
 
           defineProperty: function(wetShadowTarget, name, wetDesc) {
             if (handler.onDefineProperty) {
-              handler.onDefineProperty(wetShadowTarget, name, wetDesc);              
+              handler.onDefineProperty(wetShadowTarget, name, wetDesc, dryTarget);              
             }
             
             // no-invariant case:
@@ -303,7 +314,7 @@
 
           deleteProperty: function(wetShadowTarget, name) {
             if (handler.onDeleteProperty) {
-              handler.onDeleteProperty(wetShadowTarget, name);              
+              handler.onDeleteProperty(wetShadowTarget, name, dryTarget);              
             }
             
             // no-invariant case:
@@ -322,7 +333,7 @@
 
           preventExtensions: function(wetShadowTarget) {
             if (handler.onPreventExtensions) {
-              handler.onPreventExtensions(wetShadowTarget);  
+              handler.onPreventExtensions(wetShadowTarget, dryTarget);  
             }
                         
             copyAll(dryTarget, wetShadowTarget, dryToWet);
@@ -332,7 +343,7 @@
 
           isExtensible: function(wetShadowTarget) {
             if (handler.onIsExtensible) {
-              handler.onIsExtensible(wetShadowTarget);              
+              handler.onIsExtensible(wetShadowTarget, dryTarget);              
             }
             
             if (!Object.isExtensible(dryTarget)) {
@@ -346,7 +357,7 @@
 
           has: function(wetShadowTarget, name) {
             if (handler.onHas) {
-              handler.onHas(wetShadowTarget, name);              
+              handler.onHas(wetShadowTarget, name, dryTarget);              
             }
             
             // no-invariant case:
@@ -362,7 +373,7 @@
 
           hasOwn: function(wetShadowTarget, name) {
             if (handler.onHasOwn) {
-              handler.hasOwn(wetShadowTarget, name);              
+              handler.hasOwn(wetShadowTarget, name, dryTarget);              
             }
             
             // no-invariant case:
@@ -376,8 +387,10 @@
           },
 
           get: function(wetShadowTarget, name, wetReceiver) {
+            // DEBUG: if (name === "toString") { return dryTarget.toString; }
+            
             if (handler.onGet) {
-              handler.onGet(wetShadowTarget, name, wetReceiver);              
+              handler.onGet(wetShadowTarget, name, wetReceiver, dryTarget);              
             }
             
             // no-invariant case:
@@ -400,7 +413,7 @@
 
           set: function(wetShadowTarget, name, val, wetReceiver) {
             if (handler.onSet) {
-              handler.onSet(wetShadowTarget, name, val, wetReceiver);  
+              handler.onSet(wetShadowTarget, name, val, wetReceiver, dryTarget);  
             }
                         
             // no-invariant case:
@@ -421,7 +434,7 @@
 
           enumerate: function(wetShadowTarget) {
             if (handler.onEnumerate) {
-              handler.onEnumerate(wetShadowTarget);
+              handler.onEnumerate(wetShadowTarget, dryTarget);
             }
             
             if (Object.isExtensible(wetShadowTarget)) {
@@ -434,7 +447,7 @@
 
           keys: function(wetShadowTarget) {
             if (handler.onKeys) {
-              handler.onKeys(wetShadowTarget);
+              handler.onKeys(wetShadowTarget, dryTarget);
             }
             
             if (Object.isExtensible(wetShadowTarget)) {
@@ -447,7 +460,7 @@
 
           apply: function(wetShadowTarget, wetThisArg, wetArgs) {
             if (handler.onApply) {
-              handler.onApply(wetShadowTarget, wetThisArg, wetArgs);
+              handler.onApply(wetShadowTarget, wetThisArg, wetArgs, dryTarget);
             }
             
             return Reflect.apply(wetShadowTarget, wetThisArg, wetArgs);
@@ -455,7 +468,7 @@
 
           construct: function(wetShadowTarget, wetArgs) {
             if (handler.onConstruct) {
-              handler.onConstruct(wetShadowTarget, wetArgs);              
+              handler.onConstruct(wetShadowTarget, wetArgs, dryTarget);              
             }
             
             return Reflect.construct(wetShadowTarget, wetArgs);
