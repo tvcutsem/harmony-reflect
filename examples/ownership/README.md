@@ -2,7 +2,7 @@
 
 The file `boundary.js` implements an ownership boundary abstraction based on
 generic [membranes](https://soft.vub.ac.be/~tvcutsem/invokedynamic/js-membranes)
-(see `../generic_membranes.js`).
+(see `../generic_membrane.js`).
 
 The approach is inspired primarily by the paper:
 
