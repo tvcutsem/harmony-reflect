@@ -649,7 +649,7 @@ load('../reflect.js');
       },
       set: function(tgt, name, val, rcvr) {
         assert(rcvr === child, 'set: receiver is child');
-        return true;      
+        return true;
       },
       enumerate: function(tgt) {
         return ['foo'];
@@ -831,6 +831,6 @@ load('../reflect.js');
   }*/
     
   if (typeof window === "undefined") {
-    test();
+    global.test();
   }
 }(this));
