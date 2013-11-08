@@ -434,7 +434,6 @@ function isCompatibleDescriptor(extensible, current, desc) {
   return true;
 }
 
-
 // ---- The Validator handler wrapper around user handlers ----
 
 /**
@@ -465,10 +464,10 @@ Validator.prototype = {
    * If getTrap returns undefined, the caller should perform the
    * default forwarding behavior.
    * If getTrap returns normally otherwise, the return value
-   * will be a callable trap function whose |this| binding is
-   * pre-bound to this.handler (for convenience in the rest of the code)
+   * will be a callable trap function. When calling the trap function,
+   * the caller is responsible for binding its |this| to |this.handler|.
    */
-  getTrap: function(trapName) {    
+  getTrap: function(trapName) {
     var trap = this.handler[trapName];
     if (trap === undefined) {
       // the trap was not defined,
@@ -480,8 +479,7 @@ Validator.prototype = {
       throw new TypeError(trapName + " trap is not callable: "+trap);
     }
     
-    // bind the trap's |this| to this.handler, for convenience
-    return Function.prototype.bind.call(trap, this.handler);
+    return trap;
   },
   
   // === fundamental traps ===
@@ -503,7 +501,7 @@ Validator.prototype = {
     }
     
     name = String(name);
-    var desc = trap(this.target, name);
+    var desc = trap.call(this.handler, this.target, name);
     desc = normalizeAndCompletePropertyDescriptor(desc);
     
     var targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
@@ -644,7 +642,7 @@ Validator.prototype = {
 
     name = String(name);
     desc = normalizePropertyDescriptor(desc);
-    var success = trap(this.target, name, desc);
+    var success = trap.call(this.handler, this.target, name, desc);
     success = !!success; // coerce to Boolean
 
     if (success === true) {
@@ -695,7 +693,7 @@ Validator.prototype = {
       return Reflect.freeze(this.target);
     }
 
-    var success = trap(this.target);
+    var success = trap.call(this.handler, this.target);
     success = !!success; // coerce to Boolean
     if (success) {
       if (!Object_isFrozen(this.target)) {
@@ -716,7 +714,7 @@ Validator.prototype = {
       return Reflect.seal(this.target);
     }
 
-    var success = trap(this.target);
+    var success = trap.call(this.handler, this.target);
     success = !!success; // coerce to Boolean
     if (success) {
       if (!Object_isSealed(this.target)) {
@@ -737,7 +735,7 @@ Validator.prototype = {
       return Reflect.preventExtensions(this.target);
     }
 
-    var success = trap(this.target);
+    var success = trap.call(this.handler, this.target);
     success = !!success; // coerce to Boolean
     if (success) {
       if (Object_isExtensible(this.target)) {
@@ -760,7 +758,7 @@ Validator.prototype = {
     }
     
     name = String(name);
-    var res = trap(this.target, name);
+    var res = trap.call(this.handler, this.target, name);
     res = !!res; // coerce to Boolean
     
     if (res === true) {
@@ -795,7 +793,7 @@ Validator.prototype = {
       return Reflect.getOwnPropertyNames(this.target);
     }
     
-    var trapResult = trap(this.target);
+    var trapResult = trap.call(this.handler, this.target);
 
     // propNames is used as a set of strings
     var propNames = Object.create(null);
@@ -853,7 +851,7 @@ Validator.prototype = {
       return Reflect.isExtensible(this.target);
     }
 
-    var result = trap(this.target);
+    var result = trap.call(this.handler, this.target);
     result = !!result; // coerce to Boolean
     var state = Object_isExtensible(this.target);
     if (result !== state) {
@@ -878,7 +876,7 @@ Validator.prototype = {
       return Reflect.getPrototypeOf(this.target);
     }
 
-    var allegedProto = trap(this.target);
+    var allegedProto = trap.call(this.handler, this.target);
     
     if (!Object_isExtensible(this.target)) {
       var actualProto = Object_getPrototypeOf(this.target);
@@ -901,7 +899,7 @@ Validator.prototype = {
       return Reflect.setPrototypeOf(this.target, newProto);
     }
 
-    var success = trap(this.target, newProto);
+    var success = trap.call(this.handler, this.target, newProto);
     
     success = !!success;
     if (success && !Object_isExtensible(this.target)) {
@@ -942,7 +940,7 @@ Validator.prototype = {
     }
 
     name = String(name);
-    var res = trap(this.target, name);
+    var res = trap.call(this.handler, this.target, name);
     res = !!res; // coerce to Boolean
         
     if (res === false) {
@@ -985,7 +983,7 @@ Validator.prototype = {
     }
     
     name = String(name);
-    var res = trap(this.target, name);
+    var res = trap.call(this.handler, this.target, name);
     res = !!res; // coerce to Boolean
     
     if (res === false) {
@@ -1024,7 +1022,7 @@ Validator.prototype = {
     }
     
     name = String(name);
-    return trap(this.target, name, args, receiver);
+    return trap.call(this.handler, this.target, name, args, receiver);
   },*/
   
   /**
@@ -1052,7 +1050,7 @@ Validator.prototype = {
     }
 
     name = String(name);
-    var res = trap(this.target, name, receiver);
+    var res = trap.call(this.handler, this.target, name, receiver);
     
     var fixedDesc = Object.getOwnPropertyDescriptor(this.target, name);
     // check consistency of the returned value
@@ -1092,7 +1090,7 @@ Validator.prototype = {
     }
         
     name = String(name);
-    var res = trap(this.target, name, val, receiver);
+    var res = trap.call(this.handler, this.target, name, val, receiver);
     res = !!res; // coerce to Boolean
          
     // if success is reported, check whether property is truly assignable
@@ -1142,7 +1140,7 @@ Validator.prototype = {
       return Reflect.enumerate(this.target);
     }
     
-    var trapResult = trap(this.target);
+    var trapResult = trap.call(this.handler, this.target);
 
     // propNames is used as a set of strings
     var propNames = Object.create(null);
@@ -1196,7 +1194,7 @@ Validator.prototype = {
       return Reflect.iterate(this.target);
     }
     
-    var trapResult = trap(this.target);
+    var trapResult = trap.call(this.handler, this.target);
 
     if (Object(trapResult) !== trapResult) {
       throw new TypeError("iterate trap should return an iterator object, "+
@@ -1224,7 +1222,7 @@ Validator.prototype = {
       return Reflect.keys(this.target);
     }
     
-    var trapResult = trap(this.target);
+    var trapResult = trap.call(this.handler, this.target);
 
     // propNames is used as a set of strings
     var propNames = Object.create(null);
@@ -1286,7 +1284,7 @@ Validator.prototype = {
     }
     
     if (typeof this.target === "function") {
-      return trap(target, thisBinding, args);
+      return trap.call(this.handler, target, thisBinding, args);
     } else {
       throw new TypeError("apply: "+ target + " is not a function");
     }
@@ -1305,7 +1303,7 @@ Validator.prototype = {
     }
     
     if (typeof this.target === "function") {
-      return trap(target, args);
+      return trap.call(this.handler, target, args);
     } else {
       throw new TypeError("new: "+ target + " is not a function");
     }
@@ -1322,7 +1320,7 @@ Validator.prototype = {
       return Reflect.isSealed(this.target);
     }
 
-    var result = trap(this.target);
+    var result = trap.call(this.handler, this.target);
     result = !!result; // coerce to Boolean
     var state = Object_isSealed(this.target);
     if (result !== state) {
@@ -1348,7 +1346,7 @@ Validator.prototype = {
       return Reflect.isFrozen(this.target);
     }
 
-    var result = trap(this.target);
+    var result = trap.call(this.handler, this.target);
     result = !!result; // coerce to Boolean
     var state = Object_isFrozen(this.target);
     if (result !== state) {
