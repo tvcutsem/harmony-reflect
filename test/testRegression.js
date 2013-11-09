@@ -118,6 +118,16 @@ function test() {
     assert(JSON.stringify([].concat(1))        === "[1]",     'plain concat 7');
   }());
   
+  (function(){
+    // isPrototypeOf doesn't work if __proto__ is changed after proxy is created
+    var b = {base: 'base'};
+    var o = {foo: 'bar'};
+    var h = {};
+    var oProxy = Proxy(o, h);
+    o.__proto__ = b;
+    assert(b.isPrototypeOf(oProxy), 'isPrototypeOf test');
+  }());
+  
 }
 
 if (typeof window === "undefined") {

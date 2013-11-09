@@ -349,7 +349,8 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
     prim_defineProperty =           Object.defineProperty,
     prim_isArray =                  Array.isArray,
-    prim_concat =                   Array.prototype.concat;
+    prim_concat =                   Array.prototype.concat,
+    prim_isPrototypeOf =            Object.prototype.isPrototypeOf;
 
 // these will point to the patched versions of the respective methods on
 // Object. They are used within this module as the "intrinsic" bindings
@@ -1536,14 +1537,39 @@ function makeUnwrapping1ArgMethod(primitive) {
 
 Object.prototype.valueOf =
   makeUnwrapping0ArgMethod(Object.prototype.valueOf);
-Object.prototype.isPrototypeOf =
-  makeUnwrapping1ArgMethod(Object.prototype.isPrototypeOf);
 Object.prototype.toString =
   makeUnwrapping0ArgMethod(Object.prototype.toString);
 Function.prototype.toString =
   makeUnwrapping0ArgMethod(Function.prototype.toString);
 Date.prototype.toString =
   makeUnwrapping0ArgMethod(Date.prototype.toString);
+
+Object.prototype.isPrototypeOf = function builtin(arg) {
+  // unwrap 'this' if it is a proxy
+  var vHandler = safeWeakMapGet(directProxies, this);
+  if (vHandler !== undefined) {
+    return builtin.call(vHandler.target, arg);
+  } else {
+    // bugfix thanks to Bill Mark:
+    // We've unwrapped 'this', but 'arg' may still be a proxy.
+    // So, implement isPrototypeOf ourselves using getPrototypeOf
+    // until we get to a non-proxy.
+    // cf. ECMAScript 6 spec for Object.prototype.isPrototypeOf
+    while (true) {
+      var vHandler2 = safeWeakMapGet(directProxies, arg);
+      if (vHandler2 !== undefined) {
+        arg = vHandler2.getPrototypeOf();
+        if (arg === null) {
+          return false;
+        } else if (sameValue(arg, this)) {
+          return true;
+        }
+      } else {
+        return prim_isPrototypeOf.call(this, arg);
+      }
+    }
+  }
+};
   
 Array.isArray = function(subject) {
   var vHandler = safeWeakMapGet(directProxies, subject);
