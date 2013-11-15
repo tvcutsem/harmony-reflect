@@ -127,6 +127,43 @@ function test() {
     o.__proto__ = b;
     assert(b.isPrototypeOf(oProxy), 'isPrototypeOf test');
   }());
+ 
+  (function(){
+    // inheritance and proxies: https://github.com/tvcutsem/harmony-reflect/issues/23
+    // prototype has the property
+    var proto = {age: 1}
+    var proxiedProto = new Proxy(proto, {
+        set: function(target, name, value) {
+            target[name] = value; return true;
+        }
+    });
+
+    var obj = Object.create(proxiedProto);
+    obj.age = 2;
+
+    assert(obj.age === 2, 'obj.age === 2');
+    assert(obj.hasOwnProperty('age') === false, 'age lives on prototype');
+    assert(proto.age === 2, 'age on prototype updated');
+  }());
+  
+  (function(){
+    // inheritance and proxies: https://github.com/tvcutsem/harmony-reflect/issues/23
+    // prototype does not have the property
+    var proto = {};
+    var proxiedProto = new Proxy(proto, {
+        has: function() { return true; }, // without this line, set trap is not called!
+        set: function(target, name, value) {
+            target[name] = value; return true;
+        }
+    });
+
+    var obj = Object.create(proxiedProto);
+    obj.age = 2;
+
+    assert(obj.age === 2, 'obj.age === 2');
+    assert(obj.hasOwnProperty('age') === false, 'age lives on prototype');
+    assert(proto.age === 2, 'age on prototype updated');
+  }());
   
 }
 
