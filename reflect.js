@@ -1545,28 +1545,23 @@ Date.prototype.toString =
   makeUnwrapping0ArgMethod(Date.prototype.toString);
 
 Object.prototype.isPrototypeOf = function builtin(arg) {
-  // unwrap 'this' if it is a proxy
-  var vHandler = safeWeakMapGet(directProxies, this);
-  if (vHandler !== undefined) {
-    return builtin.call(vHandler.target, arg);
-  } else {
-    // bugfix thanks to Bill Mark:
-    // We've unwrapped 'this', but 'arg' may still be a proxy.
-    // So, implement isPrototypeOf ourselves using getPrototypeOf
-    // until we get to a non-proxy.
-    // cf. ECMAScript 6 spec for Object.prototype.isPrototypeOf
-    while (true) {
-      var vHandler2 = safeWeakMapGet(directProxies, arg);
-      if (vHandler2 !== undefined) {
-        arg = vHandler2.getPrototypeOf();
-        if (arg === null) {
-          return false;
-        } else if (sameValue(arg, this)) {
-          return true;
-        }
-      } else {
-        return prim_isPrototypeOf.call(this, arg);
+  // bugfix thanks to Bill Mark:
+  // built-in isPrototypeOf does not unwrap proxies used
+  // as arguments. So, we implement the builtin ourselves,
+  // based on the ECMAScript 6 spec. Our encoding will
+  // make sure that if a proxy is used as an argument,
+  // its getPrototypeOf trap will be called.
+  while (true) {
+    var vHandler2 = safeWeakMapGet(directProxies, arg);
+    if (vHandler2 !== undefined) {
+      arg = vHandler2.getPrototypeOf();
+      if (arg === null) {
+        return false;
+      } else if (sameValue(arg, this)) {
+        return true;
       }
+    } else {
+      return prim_isPrototypeOf.call(this, arg);
     }
   }
 };
