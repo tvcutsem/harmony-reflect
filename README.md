@@ -36,10 +36,10 @@ Compatibility
 The `Reflect` API, with support for proxies, was tested on:
 
   * Firefox 12 (should work since Firefox 4)
-  * Chrome 19, under [an experimental flag](http://www.2ality.com/2012/01/esnext-features.html)
-  * spidermonkey shell
-  * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
+  * Chrome 19, with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
   * `node --harmony` (in node v0.7.8)
+  * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
+  * spidermonkey shell
   
 Dependencies
 ============
@@ -72,11 +72,15 @@ The [examples](https://github.com/tvcutsem/harmony-reflect/tree/master/examples)
   * observer: a self-hosted implementation of the ES7 `Object.observe` notification mechanism.
   * profiler: a simple profiler to collect usage statistics of an object.
 
+Other example uses of proxies (not done by me, but using this library):
+
+  * supporting [negative array indices](https://github.com/sindresorhus/negative-array) a la Python
+  * [tpyo](https://github.com/mathiasbynens/tpyo): using proxies to correct typo's in JS property names
+
 Spec Compatibility
 ==================
   
 This library differs from the draft ECMAScript 6 spec. as follows:
 
-  * No support yet for the `invoke()` trap on proxies.
-  * Still includes `seal()` and `freeze()` as traps on proxies and methods in `Reflect` (ES6 removed them, i.e. calling `Object.seal(proxy)` will instead trigger other traps on the proxy, such as `defineProperty` and `preventExtensions`).
+  * In ES6, `Proxy` will be a constructor function that will _require_ the use of `new`. That is, you must write `new Proxy(target, handler)`. This library exports `Proxy` as an ordinary function which may be called without using the `new` operator.
   * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`). It is as yet unclear how ES6 will spec these operations in the presence of proxies.
