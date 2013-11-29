@@ -125,7 +125,20 @@ function test() {
     var h = {};
     var oProxy = Proxy(o, h);
     o.__proto__ = b;
-    assert(b.isPrototypeOf(oProxy), 'isPrototypeOf test');
+    assert(b.isPrototypeOf(oProxy), 'isPrototypeOf test1');
+  }());
+  
+  (function(){
+    // isPrototypeOf doesn't work if __proto__ is changed after proxy is created
+    var a = {a : 'a'};
+    var b = {base: 'base'};
+    var bProxy = Proxy(b, {});
+    b.__proto__ = a;
+    var o = {foo: 'bar'};
+    var oProxy = Proxy(o, {});
+    o.__proto__ = bProxy;
+    assert(bProxy.isPrototypeOf(oProxy), 'isPrototypeOf test2a');
+    assert(a.isPrototypeOf(oProxy), 'isPrototypeOf test2b');
   }());
  
   (function(){
