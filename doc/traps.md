@@ -4,7 +4,7 @@ The following table shows Javascript code on the left, and approximately how tha
 
 Assume `proxy` is defined as:
 
-    var proxy = Proxy(target, handler)
+    var proxy = new Proxy(target, handler)
 
 See further notes below for details.
 
@@ -65,19 +65,6 @@ for (var $i = 0; i < $props.length; i++) {
     <td>handler.set(target, 'foo', v, obj)</td>
   </tr>
   <tr>
-    <td>iteration (2)</td>
-    <td>for (var elem of proxy) { ... }</td>
-    <td><pre>var $iterator = handler.iterate(target);
-try {
-  while (true) {
-    var elem = $iterator.next();
-    ...
-  }
-} catch (e) {
-  if (e !== StopIteration) throw e;
-}</pre></td>
-  </tr>
-  <tr>
     <td colspan="3">Operations on function proxies</td>
   </tr>
   <tr>
@@ -104,12 +91,12 @@ try {
     <td colspan="3">Non-interceptable operators</td>
   </tr>
   <tr>
-    <td>typeof</td>
+    <td>typeof test</td>
     <td>typeof proxy</td>
-    <td>typeof target</td>
+    <td>(typeof target === "function") ? "function" : "object"</td>
   </tr>
   <tr>
-    <td>===</td>
+    <td>identity comparison</td>
     <td>proxy === v</td>
     <td>proxy === v</td>
   </tr>
@@ -135,11 +122,6 @@ try {
     <td colspan="3">(Static) operations on Object</td>
   </tr>
   <tr>
-    <td>keys</td>
-    <td>Object.keys(proxy)</td>
-    <td>handler.keys(target)</td>
-  </tr>
-  <tr>
     <td>getOwnPropertyDescriptor (9)</td>
     <td>Object.getOwnPropertyDescriptor(proxy, 'foo')</td>
     <td>handler.getOwnPropertyDescriptor(target, 'foo')</td>
@@ -150,34 +132,9 @@ try {
     <td>handler.defineProperty(target, 'foo', {value:42,writable:true,enumerable:true,configurable:true})</td>
   </tr>
   <tr>
-    <td>getOwnPropertyNames</td>
-    <td>Object.getOwnPropertyNames(proxy)</td>
-    <td>handler.getOwnPropertyNames(target)</td>
-  </tr>
-  <tr>
-    <td>freeze</td>
-    <td>Object.freeze(proxy)</td>
-    <td>handler.freeze(target)</td>
-  </tr>
-  <tr>
-    <td>seal</td>
-    <td>Object.seal(proxy)</td>
-    <td>handler.seal(target)</td>
-  </tr>
-  <tr>
     <td>preventExtensions</td>
     <td>Object.preventExtensions(proxy)</td>
     <td>handler.preventExtensions(target)</td>
-  </tr>
-  <tr>
-    <td>isFrozen</td>
-    <td>Object.isFrozen(proxy)</td>
-    <td>handler.isFrozen(target)</td>
-  </tr>
-  <tr>
-    <td>isSealed</td>
-    <td>Object.isSealed(proxy)</td>
-    <td>handler.isSealed(target)</td>
   </tr>
   <tr>
     <td>isExtensible</td>
@@ -193,6 +150,60 @@ try {
     <td>setPrototypeOf (11)</td>
     <td>Object.setPrototypeOf(proxy, newProto)</td>
     <td>handler.setPrototypeOf(target, newProto)</td>
+  </tr>
+  <tr>
+    <td colspan="3">New ES6 operations</td>
+  </tr>
+  <tr>
+    <td>ownKeys</td>
+    <td>Reflect.ownKeys(proxy)</td>
+    <td>handler.ownKeys(target)</td>
+  </tr>
+  <tr>
+    <td colspan="3">Deprecated (these operations are intercepted differently in ES6. Below is how they are intercepted using this shim)</td>
+  </tr>
+  <tr>
+    <td>freeze</td>
+    <td>Object.freeze(proxy)</td>
+    <td>handler.freeze(target)</td>
+  </tr>
+  <tr>
+    <td>seal</td>
+    <td>Object.seal(proxy)</td>
+    <td>handler.seal(target)</td>
+  </tr>
+  <tr>
+    <td>isFrozen</td>
+    <td>Object.isFrozen(proxy)</td>
+    <td>handler.isFrozen(target)</td>
+  </tr>
+  <tr>
+    <td>isSealed</td>
+    <td>Object.isSealed(proxy)</td>
+    <td>handler.isSealed(target)</td>
+  </tr>
+  <tr>
+    <td>getOwnPropertyNames</td>
+    <td>Object.getOwnPropertyNames(proxy)</td>
+    <td>handler.getOwnPropertyNames(target)</td>
+  </tr>
+  <tr>
+    <td>keys</td>
+    <td>Object.keys(proxy)</td>
+    <td>handler.keys(target)</td>
+  </tr>
+  <tr>
+    <td>iteration (2)</td>
+    <td>for (var elem of proxy) { ... }</td>
+    <td><pre>var $iterator = handler.iterate(target);
+try {
+  while (true) {
+    var elem = $iterator.next();
+    ...
+  }
+} catch (e) {
+  if (e !== StopIteration) throw e;
+}</pre></td>
   </tr>
 </table>
 

@@ -1,4 +1,4 @@
-# API
+# Standard API
 
 ## Reflect.Proxy(target, handler)
 
@@ -7,6 +7,23 @@ This is an alias for the global Proxy function.
 Creates and returns a new proxy object. The `handler` object may define [trap functions](handler_api.md). These traps are called whenever an operation is applied to the proxy object.
 
 Both target and handler must be non-null objects.
+
+Note: In the ES6 API, `Proxy` will be a constructor function that will _require_ the use of `new`. That is, you must write `new Proxy(target, handler)` to construct a proxy object. This library exports `Proxy` as an ordinary function which may be called with or without the `new` operator.
+
+## Proxy.revocable(target, handler)
+
+Returns an object with properties `proxy` and `revoke`. `proxy` is a freshly constructed proxy, as if by calling `new Proxy(target, handler)`. `revoke()` is a function that when called, renders the associated proxy unusable: any trappable operation performed on `proxy` after it has been revoked throws a `TypeError`.
+
+When a proxy is revoked, it no longer refers to its `target` and `handler` so that these may become subject to garbage-collection.
+
+Example:
+
+    var tuple = Proxy.revocable(target, handler);
+    var proxy = tuple.proxy;
+    var revoke = tuple.revoke;
+    proxy.foo // traps
+    revoke()  // returns undefined
+    proxy.foo // throws TypeError: "proxy is revoked"
 
 ## Reflect.get(target, name, [receiver])
 
@@ -40,24 +57,6 @@ Equivalent to performing `name in target`.
 If `target` is a proxy, calls that proxy's `has` trap.
 
 `name` must be a string.
-
-## Reflect.hasOwn(target, name)
-
-Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
-
-Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
-
-If `target` is a proxy, calls that proxy's `hasOwn` trap.
-
-`name` must be a string.
-
-## Reflect.keys(target)
-
-Returns an array of strings representing the `target` object's own, enumerable property names.
-
-Same as the ES5 built-in `Object.keys(target)`.
-
-If `target` is a proxy, calls that proxy's `keys` trap.
 
 ## Reflect.apply(target, receiver, [args])
 
@@ -97,13 +96,6 @@ If `target` is a proxy, calls that proxy's `defineProperty` trap.
 
 `name` must be a string and `desc` must be a valid property descriptor object.
 
-## Reflect.getOwnPropertyNames(target)
-
-Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
-
-Same as the ES5 built-in Object.getOwnPropertyNames(target).
-If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
-
 ## Reflect.getPrototypeOf(target)
 
 Returns the prototype link of the `target` object.
@@ -141,57 +133,29 @@ The names are determined as if by executing:
     }
     return props;
 
-## Reflect.iterate(target)
-
-Returns an iterator on the target object. You can call `next()` on the iterator to retrieve subsequent elements until it throws a `StopIteration` exception, like so:
-
-    var iterator = Reflect.iterate(obj);
-    try {
-      while (true) {
-        var elem = iterator.next();
-        process(elem);
-      }
-    } catch (e) {
-      if (e !== StopIteration) throw e;
-    }
-
-If `target` is a proxy, calls that proxy's `iterate` trap.
-
-## Reflect.freeze(target)
-
-Freezes the object as if by calling `Object.freeze(target)`. Returns a boolean indicating whether the object was successfully frozen.
-
-If `target` is a proxy, calls that proxy's `freeze` trap.
-
-## Reflect.seal(target)
-
-Seals the object as if by calling `Object.seal(target)`. Returns a boolean indicating whether the object was successfully sealed.
-
-If `target` is a proxy, calls that proxy's `seal` trap.
-
 ## Reflect.preventExtensions(target)
 
 Prevents extensions to the object as if by calling `Object.preventExtensions(target)`. Returns a boolean indicating whether the object was successfully made non-extensible.
 
 If `target` is a proxy, calls that proxy's `preventExtensions` trap.
 
-## Reflect.isFrozen(target)
-
-Returns a boolean indicating whether `target` is frozen as if by calling `Object.isFrozen(target)`.
-
-If `target` is a proxy, calls that proxy's `isFrozen` trap.
-
-## Reflect.isSealed(target)
-
-Returns a boolean indicating whether `target` is sealed as if by calling `Object.isSealed(target)`.
-
-If `target` is a proxy, calls that proxy's `isSealed` trap.
-
 ## Reflect.isExtensible(target)
 
 Returns a boolean indicating whether `target` is extensible as if by calling `Object.isExtensible(target)`.
 
 If `target` is a proxy, calls that proxy's `isExtensible` trap.
+
+## Reflect.ownKeys(target)
+
+Returns an iterator that produces all of the string-keyed own property names of `target`.
+
+If `target` is a proxy, calls that proxy's `ownKeys` trap.
+
+Note: in ES6, this method returns an iterator producing strings _or symbols_, rather than just strings. Symbols are a new feature in ES6 that this library does not attempt to emulate. In this library, the method behaves just like the ES5 built-in `Object.keys(target)`, except that it returns an iterator rather than an array.
+
+# Non-standard API
+
+The functions defined below are non-standard. They are not part of the ES6 reflection API.
 
 ## Reflect.Handler()
 
@@ -224,17 +188,74 @@ All other traps are "derived", and default to one or more of the above "fundamen
 
 [More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
 
-## Proxy.revocable(target, handler)
+# Deprecated functions
 
-Returns an object with properties `proxy` and `revoke`. `proxy` is a freshly constructed proxy, as if by calling `Proxy(target, handler)`. `revoke()` is a function that when called, renders the associated proxy unusable: any trappable operation performed on `proxy` after it has been revoked results in a TypeError.
+The functions defined below were at one point part of the official ES6 API but have since been
+deprecated. This library continues to implement them for the sake of backwards-compatibility.
 
-When a proxy is revoked, it no longer refers to its `target` and `handler` so that these may become subject to garbage-collection.
+## Reflect.hasOwn(target, name)
 
-Example:
+Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
 
-    var tuple = Proxy.revocable(target, handler);
-    var proxy = tuple.proxy;
-    var revoke = tuple.revoke;
-    proxy.foo // traps
-    revoke()  // returns undefined
-    proxy.foo // throws TypeError: "proxy is revoked"
+Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
+
+If `target` is a proxy, calls that proxy's `hasOwn` trap.
+
+`name` must be a string.
+
+## Reflect.getOwnPropertyNames(target)
+
+Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
+
+Same as the ES5 built-in Object.getOwnPropertyNames(target).
+If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
+
+## Reflect.keys(target)
+
+Returns an array of strings representing the `target` object's own, enumerable property names.
+
+Same as the ES5 built-in `Object.keys(target)`.
+
+If `target` is a proxy, calls that proxy's `keys` trap.
+
+## Reflect.freeze(target)
+
+Freezes the object as if by calling `Object.freeze(target)`. Returns a boolean indicating whether the object was successfully frozen.
+
+If `target` is a proxy, calls that proxy's `freeze` trap.
+
+## Reflect.seal(target)
+
+Seals the object as if by calling `Object.seal(target)`. Returns a boolean indicating whether the object was successfully sealed.
+
+If `target` is a proxy, calls that proxy's `seal` trap.
+
+## Reflect.isFrozen(target)
+
+Returns a boolean indicating whether `target` is frozen as if by calling `Object.isFrozen(target)`.
+
+If `target` is a proxy, calls that proxy's `isFrozen` trap.
+
+## Reflect.isSealed(target)
+
+Returns a boolean indicating whether `target` is sealed as if by calling `Object.isSealed(target)`.
+
+If `target` is a proxy, calls that proxy's `isSealed` trap.
+
+## Reflect.iterate(target)
+
+Returns an iterator on the target object. You can call `next()` on the iterator to retrieve subsequent elements until it throws a `StopIteration` exception, like so:
+
+    var iterator = Reflect.iterate(obj);
+    try {
+      while (true) {
+        var elem = iterator.next();
+        process(elem);
+      }
+    } catch (e) {
+      if (e !== StopIteration) throw e;
+    }
+
+However, in ES6 one would usually use the new `for-of` loop to exhaust an iterator.
+
+If `target` is a proxy, calls that proxy's `iterate` trap.

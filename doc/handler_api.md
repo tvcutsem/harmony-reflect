@@ -58,26 +58,6 @@ This trap intercepts the following operations:
   *  `name in Object.create(proxy)` (i.e. if a proxy is used as a prototype, its `has` trap is triggered if any of its child objects do not have the property)
   *  `Reflect.has(proxy,name)`
 
-## hasOwn(target, name)
-
-Called when the proxy is queried for an own property named `name`.
-This trap should return a boolean indicating whether the proxy has an own (not inherited) property called `name`.
-
-This trap intercepts the following operations:
-
-  *  `Object.prototype.hasOwnProperty.call(proxy, name)`
-  *  `Reflect.hasOwn(proxy,name)`
-
-## keys(target)
-
-Called when the proxy is queried for its own enumerable property names.
-This trap should return an array of strings.
-
-This trap intercepts the following operations:
-
-  *  `Object.keys(proxy)`
-  *  `Reflect.keys(proxy)`
-
 ## apply(target, receiver, args)
 
 Called when the proxy is applied as a function with `receiver` as its `this`-binding and `args` as the array of actual arguments. This trap can return anything.
@@ -168,21 +148,6 @@ The proxy throws a TypeError if:
 
   *  This trap returns `true` while `Object.defineProperty(target, name, desc)` would throw. One cannot successfully define incompatible descriptors.
   * This trap returns `true`, `desc` is non-configurable and `target` has no `name` property. A non-configurable property can only be defined successfully if the `target` object has a corresponding property.
-
-## getOwnPropertyNames(target)
-
-Called when the proxy is queried for all of its own (i.e. not inherited) property names.
-This trap should return an array of strings.
-
-This trap intercepts the following operations:
-
-  *  `Object.getOwnPropertyNames(proxy)`
-  *  `Reflect.getOwnPropertyNames(proxy)`
-
-The proxy throws a TypeError if:
-
-  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
-  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
   
 ## getPrototypeOf(target)
 
@@ -241,6 +206,148 @@ This trap intercepts the following operations:
   *  `for (var name in Object.create(proxy)) {...}` (i.e. a `for-in` loop that encounters a proxy in the prototype chain)
   *  `Reflect.enumerate(proxy)`
 
+## preventExtensions(target)
+
+Called when an attempt is made to make the proxy object non-extensible.
+This trap should return a boolean indicating whether the proxy was successfully made non-extensible.
+
+This trap intercepts the following operations:
+
+  *  `Object.preventExtensions(proxy)`
+  *  `Reflect.preventExtensions(proxy)`
+
+## isExtensible(target)
+
+Called when the proxy is queried for its extensibility state.
+This trap should return a boolean indicating whether the proxy is extensible.
+
+This trap intercepts the following operations:
+
+  *  `Object.isExtensible(proxy)`
+  *  `Reflect.isExtensible(proxy)`
+  
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the extensibility state of the proxy's target object.
+
+## ownKeys(target)
+
+Called when the proxy is queried for its own keys.
+This trap should return an iterator that produces all of the string-keyed own property names of the proxy.
+
+This trap intercepts the following operations:
+
+  *  `Reflect.ownKeys(proxy)`
+
+Note: in ES6, this trap will also be triggered for the following operations:
+  
+  * `Object.keys(proxy)`
+  * `Object.seal(proxy)` and `Object.freeze(proxy)`
+  * `Object.isSealed(proxy)` and `Object.isFrozen(proxy)`
+  * `Object.assign(target, proxy)`
+  * `Object.getOwnPropertyNames(proxy)`
+  * `Object.getOwnPropertySymbols(proxy)`
+
+# Deprecated traps
+
+The trap functions defined below were at one point part of the official ES6 API but have since been
+deprecated. This library continues to implement them for the sake of backwards-compatibility.
+
+## hasOwn(target, name)
+
+Called when the proxy is queried for an own property named `name`.
+This trap should return a boolean indicating whether the proxy has an own (not inherited) property called `name`.
+
+This trap intercepts the following operations:
+
+  *  `Object.prototype.hasOwnProperty.call(proxy, name)`
+  *  `Reflect.hasOwn(proxy,name)`
+
+## getOwnPropertyNames(target)
+
+Called when the proxy is queried for all of its own (i.e. not inherited) property names.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  `Object.getOwnPropertyNames(proxy)`
+  *  `Reflect.getOwnPropertyNames(proxy)`
+
+The proxy throws a TypeError if:
+
+  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
+  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
+
+In ES6, the intercepted operations instead trigger the `ownKeys` trap.
+
+## keys(target)
+
+Called when the proxy is queried for its own enumerable property names.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  `Object.keys(proxy)`
+  *  `Reflect.keys(proxy)`
+
+In ES6, the intercepted operations instead trigger the `ownKeys` trap.
+
+## freeze(target)
+
+Called when an attempt is made to freeze the proxy object.
+This trap should return a boolean indicating whether the proxy was successfully frozen.
+
+This trap intercepts the following operations:
+
+  *  `Object.freeze(proxy)`
+  *  `Reflect.freeze(proxy)`
+
+In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor`, `defineProperty` and `preventExtensions` traps.
+
+## seal(target)
+
+Called when an attempt is made to seal the proxy object.
+This trap should return a boolean indicating whether the proxy was successfully sealed.
+
+This trap intercepts the following operations:
+
+  *  `Object.seal(proxy)`
+  *  `Reflect.seal(proxy)`
+
+In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor`, `defineProperty` and `preventExtensions` traps.
+
+## isFrozen(target)
+
+Called when the proxy is queried for its frozen state.
+This trap should return a boolean indicating whether the proxy is frozen.
+
+This trap intercepts the following operations:
+
+  *  `Object.isFrozen(proxy)`
+  *  `Reflect.isFrozen(proxy)`
+
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the frozen state of the proxy's target object.
+
+In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor` and `isExtensible` traps.
+
+## isSealed(target)
+
+Called when the proxy is queried for its sealed state.
+This trap should return a boolean indicating whether the proxy is sealed.
+
+This trap intercepts the following operations:
+
+  *  `Object.isSealed(proxy)`
+  *  `Reflect.isSealed(proxy)`
+
+This trap throws a TypeError if:
+
+  * The return value does not correspond to the sealed state of the proxy's target object.
+
+In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor` and `isExtensible` traps.
+
 ## iterate(target)
 
 Called when the proxy's properties are iterated over using a `for-of` loop.
@@ -262,76 +369,5 @@ This trap intercepts the following operations:
     } catch (e) {
       if (e !== StopIteration) throw e;
     }
-    
 
-## freeze(target)
-
-Called when an attempt is made to freeze the proxy object.
-This trap should return a boolean indicating whether the proxy was successfully frozen.
-
-This trap intercepts the following operations:
-
-  *  `Object.freeze(proxy)`
-  *  `Reflect.freeze(proxy)`
-
-## seal(target)
-
-Called when an attempt is made to seal the proxy object.
-This trap should return a boolean indicating whether the proxy was successfully sealed.
-
-This trap intercepts the following operations:
-
-  *  `Object.seal(proxy)`
-  *  `Reflect.seal(proxy)`
-
-## preventExtensions(target)
-
-Called when an attempt is made to make the proxy object non-extensible.
-This trap should return a boolean indicating whether the proxy was successfully made non-extensible.
-
-This trap intercepts the following operations:
-
-  *  `Object.preventExtensions(proxy)`
-  *  `Reflect.preventExtensions(proxy)`
-  
-## isFrozen(target)
-
-Called when the proxy is queried for its frozen state.
-This trap should return a boolean indicating whether the proxy is frozen.
-
-This trap intercepts the following operations:
-
-  *  `Object.isFrozen(proxy)`
-  *  `Reflect.isFrozen(proxy)`
-  
-This trap throws a TypeError if:
-
-  * The return value does not correspond to the frozen state of the proxy's target object.
-
-## isSealed(target)
-
-Called when the proxy is queried for its sealed state.
-This trap should return a boolean indicating whether the proxy is sealed.
-
-This trap intercepts the following operations:
-
-  *  `Object.isSealed(proxy)`
-  *  `Reflect.isSealed(proxy)`
-  
-This trap throws a TypeError if:
-
-  * The return value does not correspond to the sealed state of the proxy's target object.
-
-## isExtensible(target)
-
-Called when the proxy is queried for its extensibility state.
-This trap should return a boolean indicating whether the proxy is extensible.
-
-This trap intercepts the following operations:
-
-  *  `Object.isExtensible(proxy)`
-  *  `Reflect.isExtensible(proxy)`
-  
-This trap throws a TypeError if:
-
-  * The return value does not correspond to the extensibility state of the proxy's target object.
+However, in ES6 one would usually use the new `for-of` loop to exhaust an iterator.

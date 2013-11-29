@@ -210,6 +210,25 @@ function test() {
            'keys success');
   }());
   
+  // ownKeys(target : object) -> iterator
+  (function(){
+    var target = Object.create(Object.prototype, {
+      x: { value:1, enumerable: true  },
+      y: { value:2, enumerable: false },
+    });
+    var iterator = Reflect.ownKeys(target);
+    var result = [];
+    try {
+      while (true) {
+        result.push(iterator.next());
+      }
+    } catch (e) {
+      if (e !== StopIteration) throw e;
+    }
+    assert(result.length === 2,
+           'ownKeys success');
+  }());
+  
   // get(target : object, name : string, receiver : object?) -> any
   (function(){
     var target = Object.create({z:3, get w() { return this; }}, {

@@ -1273,6 +1273,31 @@ Validator.prototype = {
   },
   
   /**
+   * In ES6, this trap is called for all operations that require a list
+   * of an object's properties, including Object.getOwnPropertyNames
+   * and Object.keys.
+   *
+   * The trap should return an iterator. The proxy implementation only
+   * checks whether the return value is an object.
+   */
+  ownKeys: function() {
+    var trap = this.getTrap("ownKeys");
+    if (trap === undefined) {
+      // default forwarding behavior
+      return Reflect.ownKeys(this.target);
+    }
+    
+    var trapResult = trap.call(this.handler, this.target);
+
+    if (trapResult === null || typeof trapResult !== "object") {
+      throw new TypeError("ownKeys should return an iterator object, got " +
+                          trapResult);
+    }
+    
+    return trapResult;
+  },
+  
+  /**
    * New trap that reifies [[Call]].
    * If the target is a function, then a call to
    *   proxy(...args)
@@ -1898,6 +1923,24 @@ var Reflect = global.Reflect = {
   keys: function(target) {
     return Object.keys(target);
   },
+  // imperfect ownKeys implemenation: in ES6, should also include
+  // symbol-keyed properties.
+  ownKeys: function(target) {
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.ownKeys(handler.target);
+    }
+    
+    var result = Reflect.getOwnPropertyNames(target);
+    var l = +result.length;
+    var idx = 0;
+    return {
+      next: function() {
+        if (idx === l) throw StopIteration;
+        return result[idx++];
+      }
+    };
+  },
   apply: function(target, receiver, args) {
     // target.apply(receiver, args)
     return Function.prototype.apply.call(target, receiver, args);
@@ -2156,6 +2199,17 @@ Handler.prototype = {
       }
     }
     return result;
+  },
+  ownKeys: function(target) {
+    var trapResult = Object(this.getOwnPropertyNames(target));
+    var l = +trapResult.length;
+    var idx = 0;
+    return {
+      next: function() {
+        if (idx === l) throw StopIteration;
+        return trapResult[idx++];
+      }
+    };
   },
   construct: function(target, args) {
     var proto = this.get(target, 'prototype', target);
