@@ -77,6 +77,14 @@ Other example uses of proxies (not done by me, but using this library):
   * supporting [negative array indices](https://github.com/sindresorhus/negative-array) a la Python
   * [tpyo](https://github.com/mathiasbynens/tpyo): using proxies to correct typo's in JS property names
 
+Proxy Handler API
+=================
+
+The sister project [proxy-handlers](https://github.com/tvcutsem/proxy-handlers)
+defines a number of predefined Proxy handlers as "abstract classes" that your 
+code can "subclass" The goal is to minimize the number of traps that your proxy
+handlers must implement.
+
 Spec Compatibility
 ==================
   
