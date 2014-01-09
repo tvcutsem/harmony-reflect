@@ -8,7 +8,9 @@ Creates and returns a new proxy object. The `handler` object may define [trap fu
 
 Both target and handler must be non-null objects.
 
-Note: In the ES6 API, `Proxy` will be a constructor function that will _require_ the use of `new`. That is, you must write `new Proxy(target, handler)` to construct a proxy object. This library exports `Proxy` as an ordinary function which may be called with or without the `new` operator.
+Note: In the official ES6 API, `Proxy` will be a constructor function that
+will _require_ the use of `new`. That is, you must write `new Proxy(target, handler)` to construct a proxy object. This library exports `Proxy` as an ordinary function which may be called with or without the `new` operator.
+For forward-compatibility, it is advised to always use `new`.
 
 ## Proxy.revocable(target, handler)
 
@@ -175,7 +177,7 @@ The intent is for users to "subclass" `Handler` and override the "fundamental" t
     MyHandler.prototype.defineProperty = function(tgt,name,desc) {...};
     
     // create a proxy with an instance of the Handler "subclass"
-    var proxy = Proxy(target, new MyHandler());
+    var proxy = new Proxy(target, new MyHandler());
     
     // MyHandler's inherited "set" trap will call the overridden "defineProperty" trap
     proxy.foo = 42;

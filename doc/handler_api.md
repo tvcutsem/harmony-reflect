@@ -4,7 +4,7 @@ This API documents all the functions that a proxy handler object may implement t
 
 As an example, the below proxy logs all `get` and `set` operations applied to it, then forwards the operations to its target object:
 
-    var proxy = Proxy({}, {
+    var proxy = new Proxy({}, {
       // intercepts proxy[name]
       get: function(target, name, receiver) {
         console.log('get',name);
@@ -115,7 +115,7 @@ Examples:
         }
       }
     };
-    var proxy = Proxy(target, handler);
+    var proxy = new Proxy(target, handler);
     Object.getOwnPropertyDescriptor(proxy, "x")
       // calls handler.getOwnPropertyDescriptor(target, "x")
       // returns {value: 0, writable: true, configurable: true, enumerable: true}
