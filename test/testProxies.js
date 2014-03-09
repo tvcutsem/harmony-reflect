@@ -654,7 +654,7 @@ load('../reflect.js');
         return true;
       },
       enumerate: function(tgt) {
-        return ['foo'];
+        return ['baz'];
       }
     });
     child = Object.create(proxy);
@@ -665,7 +665,7 @@ load('../reflect.js');
     assert(called, 'inherited set actually invoked');
     var props = [];
     for (var p in child) { props.push(p); }
-    assert(props.length === 1 && props[0] === 'foo', 'invoking inherited enumerate');
+    assert(props.length === 1 && props[0] === 'baz', 'invoking inherited enumerate');
   }
 
   function testFunctions() {
