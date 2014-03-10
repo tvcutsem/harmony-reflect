@@ -639,6 +639,7 @@ load('../reflect.js');
 
   function testInheritance() {
     var child;
+    var called = false;
     var proxy = Proxy({}, {
       has: function(tgt, name) {
         return name === 'foo';
@@ -649,20 +650,22 @@ load('../reflect.js');
       },
       set: function(tgt, name, val, rcvr) {
         assert(rcvr === child, 'set: receiver is child');
+        called = true;
         return true;
       },
       enumerate: function(tgt) {
-        return ['foo'];
+        return ['baz'];
       }
     });
     child = Object.create(proxy);
     assert('foo' in child, 'invoking inherited has');
     assert(!('bar' in child), 'invoking inherited has on non-existent prop');
     assert(child['foo'] === 'foo', 'invoking inherited get');
-    assert((child['foo'] = 42) === 42, 'invoking inherited set');
+    child['foo'] = 42;
+    assert(called, 'inherited set actually invoked');
     var props = [];
     for (var p in child) { props.push(p); }
-    assert(props.length === 1 && props[0] === 'foo', 'invoking inherited enumerate');
+    assert(props.length === 1 && props[0] === 'baz', 'invoking inherited enumerate');
   }
 
   function testFunctions() {
