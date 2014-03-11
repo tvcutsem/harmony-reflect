@@ -2234,68 +2234,59 @@ var revokedHandler = Proxy.create({
 // feature-test whether the Proxy global exists
 if (typeof Proxy !== "undefined") {
 
-  // if Proxy is a function, direct proxies are already supported
-  if (typeof Proxy !== "function") {
+  var primCreate = Proxy.create,
+      primCreateFunction = Proxy.createFunction;
 
-    var primCreate = Proxy.create,
-        primCreateFunction = Proxy.createFunction;
-
-    Reflect.Proxy = function(target, handler) {
-      // check that target is an Object
-      if (Object(target) !== target) {
-        throw new TypeError("Proxy target must be an Object, given "+target);
-      }
-      // check that handler is an Object
-      if (Object(handler) !== handler) {
-        throw new TypeError("Proxy handler must be an Object, given "+handler);
-      }
-
-      var vHandler = new Validator(target, handler);
-      var proxy;
-      if (typeof target === "function") {
-        proxy = primCreateFunction(vHandler,
-          // call trap
-          function() {
-            var args = Array.prototype.slice.call(arguments);
-            return vHandler.apply(target, this, args);
-          },
-          // construct trap
-          function() {
-            var args = Array.prototype.slice.call(arguments);
-            return vHandler.construct(target, args);
-          });
-      } else {
-        proxy = primCreate(vHandler, Object.getPrototypeOf(target));
-      }
-      directProxies.set(proxy, vHandler);
-      return proxy;
-    };
-    
-    Reflect.Proxy.revocable = function(target, handler) {
-      var proxy = Reflect.Proxy(target, handler);
-      var revoke = function() {
-        var vHandler = directProxies.get(proxy);
-        if (vHandler !== null) {
-          vHandler.target  = null;
-          vHandler.handler = revokedHandler;
-        }
-        return undefined;
-      };
-      return {proxy: proxy, revoke: revoke};
+  Reflect.Proxy = function(target, handler) {
+    // check that target is an Object
+    if (Object(target) !== target) {
+      throw new TypeError("Proxy target must be an Object, given "+target);
+    }
+    // check that handler is an Object
+    if (Object(handler) !== handler) {
+      throw new TypeError("Proxy handler must be an Object, given "+handler);
     }
 
-  } else {
-    // Proxy is already a function, so presumably direct proxies
-    // are supported natively
-    Reflect.Proxy = Proxy;
+    var vHandler = new Validator(target, handler);
+    var proxy;
+    if (typeof target === "function") {
+      proxy = primCreateFunction(vHandler,
+        // call trap
+        function() {
+          var args = Array.prototype.slice.call(arguments);
+          return vHandler.apply(target, this, args);
+        },
+        // construct trap
+        function() {
+          var args = Array.prototype.slice.call(arguments);
+          return vHandler.construct(target, args);
+        });
+    } else {
+      proxy = primCreate(vHandler, Object.getPrototypeOf(target));
+    }
+    directProxies.set(proxy, vHandler);
+    return proxy;
+  };
+  
+  Reflect.Proxy.revocable = function(target, handler) {
+    var proxy = Reflect.Proxy(target, handler);
+    var revoke = function() {
+      var vHandler = directProxies.get(proxy);
+      if (vHandler !== null) {
+        vHandler.target  = null;
+        vHandler.handler = revokedHandler;
+      }
+      return undefined;
+    };
+    return {proxy: proxy, revoke: revoke};
   }
+
 } else {
   // Proxy global not defined, so proxies are not supported
   
   Reflect.Proxy = function(_target, _handler) {
     throw new Error("proxies not supported on this platform");
   }
-  
 
 }
 
@@ -2305,7 +2296,7 @@ global.Proxy = Reflect.Proxy;
 
 // to support iteration protocol in non-spidermonkey environments:
 if (typeof StopIteration === "undefined") {
-  global.StopIteration = {};
+  global.StopIteration = Object.freeze({});
 }
 
 // for node.js modules, export every property in the Reflect object

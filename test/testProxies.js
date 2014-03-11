@@ -653,7 +653,7 @@ load('../reflect.js');
         called = true;
         return true;
       },
-      enumerate: function(tgt) {
+      enumerate: function(tgt) {        
         return ['baz'];
       }
     });
