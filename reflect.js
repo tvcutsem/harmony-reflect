@@ -1628,6 +1628,8 @@ Array.prototype.concat = function(/*...args*/) {
 
 // setPrototypeOf support on platforms that support __proto__
 
+var prim_setPrototypeOf = Object.setPrototypeOf;
+
 // patch and extract original __proto__ setter
 var __proto__setter = (function() {
   var protoDesc = prim_getOwnPropertyDescriptor(Object.prototype,'__proto__');
@@ -1669,6 +1671,9 @@ Object.setPrototypeOf = function(target, newProto) {
     if (!Object_isExtensible(target)) {
       throw new TypeError("can't set prototype on non-extensible object: " + target);
     }
+    if (prim_setPrototypeOf)
+      return prim_setPrototypeOf(target, newProto);
+
     __proto__setter.call(target, newProto);
     return target;
   }

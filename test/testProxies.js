@@ -97,6 +97,7 @@ load('../reflect.js');
       testTransparentWrappers();
       testRevocableProxies();
       testSetPrototypeOf();
+      testSetPrototypeOfUndefined();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -653,7 +654,7 @@ load('../reflect.js');
         called = true;
         return true;
       },
-      enumerate: function(tgt) {        
+      enumerate: function(tgt) {
         return ['baz'];
       }
     });
@@ -809,6 +810,17 @@ load('../reflect.js');
         });
         Object.setPrototypeOf(p, newParent);
       });
+  }
+
+  function testSetPrototypeOfUndefined() {
+    var obj = {};
+    var shouldThrow;
+    try {
+      Object.setPrototypeOf(obj, undefined);
+    } catch (ex) {
+      shouldThrow = ex;
+    }
+    assert(shouldThrow);
   }
 
   // invoke experiment
