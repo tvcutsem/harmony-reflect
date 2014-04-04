@@ -667,18 +667,6 @@ Validator.prototype = {
                               "descriptor for property '"+name+"'");
         }
       }
-
-      if (!desc.configurable && !isSealedDesc(targetDesc)) {
-        // if the property is configurable or non-existent on the target,
-        // but is successfully being redefined as a non-configurable property,
-        // it may later be reported as configurable or non-existent, which violates
-        // the invariant that if the property might change or disappear, the
-        // configurable attribute must be true.
-        throw new TypeError("cannot successfully define a non-configurable "+
-                            "descriptor for configurable or non-existent property '"+
-                            name+"'");
-      }
-
     }
 
     return success;

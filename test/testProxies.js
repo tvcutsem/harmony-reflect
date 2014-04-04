@@ -97,6 +97,7 @@ load('../reflect.js');
       testTransparentWrappers();
       testRevocableProxies();
       testSetPrototypeOf();
+      testUpdatePropertyDescriptor();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -228,32 +229,6 @@ load('../reflect.js');
       assertThrows("cannot report a non-configurable descriptor for "+
                    "configurable or non-existent property 'x'",
         function() { Object.getOwnPropertyDescriptor(brokenProxy, 'x'); });
-    };
-
-  TESTS.testCantDefineNonExistentNonConfigurableProp =
-    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
-      success.x = true;
-      assertThrows("cannot successfully define a non-configurable "+
-                   "descriptor for configurable or non-existent property 'x'",
-        function() { Object.defineProperty(brokenProxy, 'x',
-                                           {value:1,configurable:false}); });
-    };
-
-  TESTS.testCantDefineConfigurableAsNonConfigurableProp =
-    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
-      Object.defineProperty(target, 'x', {
-        value:1,
-        writable:true,
-        enumerable:true,
-        configurable:true });
-      success.x = true;
-      assertThrows("cannot successfully define a non-configurable "+
-                   "descriptor for configurable or non-existent property 'x'",
-        function() { Object.defineProperty(brokenProxy, 'x',
-                                           {value:1,
-                                            writable:true,
-                                            enumerable:true,
-                                            configurable:false}); });
     };
 
   TESTS.testNonConfigurableRedefinition =
@@ -653,7 +628,7 @@ load('../reflect.js');
         called = true;
         return true;
       },
-      enumerate: function(tgt) {        
+      enumerate: function(tgt) {
         return ['baz'];
       }
     });
@@ -809,6 +784,19 @@ load('../reflect.js');
         });
         Object.setPrototypeOf(p, newParent);
       });
+  }
+
+  function testUpdatePropertyDescriptor() {
+    var obj = {};
+    Object.defineProperty(obj, 'prop', {value: true, configurable: true});
+    var proxy = Proxy(obj, {
+      defineProperty: function(target, name, desc) {
+        return Object.defineProperty(obj, name, desc);
+      }
+    });
+    Object.defineProperty(proxy, 'prop', {value: function() { return false; }});
+    var descriptor = Object.getOwnPropertyDescriptor(obj, 'prop');
+    assert(typeof descriptor.value === 'function');
   }
 
   // invoke experiment
