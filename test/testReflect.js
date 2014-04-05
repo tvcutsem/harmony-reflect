@@ -358,6 +358,28 @@ function test() {
            'enumerability not overridden'); // enumerability was not overridden
   }());
   
+  // setPrototypeOf(target : object, newProto : object | null) -> boolean
+  (function() {
+    try {
+      Reflect.setPrototypeOf({},{});
+    } catch(e) {
+      if (e.message === "setPrototypeOf not supported on this platform") {
+        return;
+      } else {
+        throw e;
+      }
+    }
+    
+    var oldProto = {};
+    var target = Object.create(oldProto);
+    var newProto = {};
+    Reflect.setPrototypeOf(target, newProto);
+    assert(Reflect.getPrototypeOf(target) === newProto);
+    assertThrows("prototype must be an object or null", function() {
+      Reflect.setPrototypeOf(target, undefined);
+    });
+  }());
+  
 }
 
 if (typeof window === "undefined") {

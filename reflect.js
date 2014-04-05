@@ -1674,6 +1674,9 @@ Object.setPrototypeOf = function(target, newProto) {
     if (prim_setPrototypeOf)
       return prim_setPrototypeOf(target, newProto);
 
+    if (Object(newProto) !== newProto || newProto === null) {
+      throw new TypeError("prototype must be an object or null")
+    }
     __proto__setter.call(target, newProto);
     return target;
   }
