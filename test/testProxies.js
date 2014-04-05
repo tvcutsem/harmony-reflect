@@ -48,7 +48,7 @@ if(typeof require === 'function') {
 load('../reflect.js');
 
 (function(global){
-  
+
   var VERBOSE = false;
   var passed = 0;
   var total = 0;
@@ -66,7 +66,7 @@ load('../reflect.js');
   function assertThrows(message, fn) {
     // Different js engines use different language for the errors
     // This is a small hack to allow them to pass while other unexpected
-    // errors still fail. There may be gaps here that would allow 
+    // errors still fail. There may be gaps here that would allow
     // failing tests to get through
     var re = /cannot|can't|redefine|trap/i;
     try {
@@ -97,6 +97,7 @@ load('../reflect.js');
       testTransparentWrappers();
       testRevocableProxies();
       testSetPrototypeOf();
+      testSetPrototypeOfUndefined();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -317,7 +318,7 @@ load('../reflect.js');
       assertThrows("property 'x' is non-configurable and can't be deleted",
         function() {
           success.x = true;
-          delete brokenProxy.x;      
+          delete brokenProxy.x;
         });
     };
 
@@ -329,7 +330,7 @@ load('../reflect.js');
       assertThrows("getOwnPropertyNames cannot list a new property "+
                    "'y' on a non-extensible object",
         function() {
-          Object.getOwnPropertyNames(brokenProxy);  
+          Object.getOwnPropertyNames(brokenProxy);
         });
     };
 
@@ -345,7 +346,7 @@ load('../reflect.js');
       assertThrows("cannot report existing non-configurable own property "+
                    "'x' as a non-existent own property",
         function() {
-          Object.prototype.hasOwnProperty.call(brokenProxy, 'x');  
+          Object.prototype.hasOwnProperty.call(brokenProxy, 'x');
         });
     };
 
@@ -357,7 +358,7 @@ load('../reflect.js');
       assertThrows("cannot report a new own property 'y' "+
                    "on a non-extensible object",
         function() {
-          Object.prototype.hasOwnProperty.call(brokenProxy, 'y');  
+          Object.prototype.hasOwnProperty.call(brokenProxy, 'y');
         });
     };
 
@@ -417,7 +418,7 @@ load('../reflect.js');
       assertThrows("keys trap cannot list a new property "+
                    "'y' on a non-extensible object",
         function() {
-          Object.keys(brokenProxy);  
+          Object.keys(brokenProxy);
         });
     };
 
@@ -507,7 +508,7 @@ load('../reflect.js');
     assert(proxy.x === 1, "proxy.x === 1");
 
     forwarder.freeze = function(target) {
-      Object.defineProperty(target, 'x', 
+      Object.defineProperty(target, 'x',
         {value:1,
          configurable:false,
          writable:false,
@@ -601,7 +602,7 @@ load('../reflect.js');
            'FWD: wcdp deleted');
     result = Object.getOwnPropertyDescriptor(proxy, 'wcdp');
     assert(result === undefined,
-           'FWD: wcdp is non-existent');      
+           'FWD: wcdp is non-existent');
 
     result = [];
     // enumerates wncdp, inherited
@@ -632,7 +633,7 @@ load('../reflect.js');
     assert(proxy.nwncdp === 2,
            'FWD: proxy.nwncdp still has correct value');
 
-    result = Object.keys(proxy); // wncdp 
+    result = Object.keys(proxy); // wncdp
     assert(result.length === 1,
            'FWD: keys returned correct #names');
   }
@@ -653,7 +654,7 @@ load('../reflect.js');
         called = true;
         return true;
       },
-      enumerate: function(tgt) {        
+      enumerate: function(tgt) {
         return ['baz'];
       }
     });
@@ -722,7 +723,7 @@ load('../reflect.js');
              'Date.prototype.toString on dp');
       assert(str === dp.toString(), 'dp.toString()');
       assert(str === Date.prototype.toString.call(dpp),
-             'Date.prototype.toString on dpp');    
+             'Date.prototype.toString on dpp');
     }());
 
     // functions
@@ -753,7 +754,7 @@ load('../reflect.js');
              'Array.prototype.toString on app');
     }());
   }
-  
+
   function testRevocableProxies() {
     var target = {};
     var handler = { get: function() { return 1; }};
@@ -767,7 +768,7 @@ load('../reflect.js');
     assertThrows('proxy is revoked', function() { delete p.x });
     assert(typeof p === 'object', 'typeof still works on revoked proxy');
   }
-  
+
   function testSetPrototypeOf() {
     try {
       Object.setPrototypeOf({}, {});
@@ -778,19 +779,19 @@ load('../reflect.js');
         fail(e);
       }
     }
-    
+
     var parent = {};
     var child = Object.create(parent);
     var newParent = {};
     assert(Object.getPrototypeOf(child) === parent, 'getPrototypeOf before');
     assert(Object.setPrototypeOf(child, newParent) === child, 'setPrototypeOf return');
     assert(Object.getPrototypeOf(child) === newParent, 'getPrototypeOf after');
-    
+
     assertThrows("can't set prototype on non-extensible object: "+({}),
                  function() {
                    Object.setPrototypeOf(Object.preventExtensions({}), {});
                  });
-    
+
     var p = Proxy({}, {
       setPrototypeOf: function(target, newProto) {
         assert(newProto === newParent, 'newProto === newParent');
@@ -799,7 +800,7 @@ load('../reflect.js');
     });
     Object.setPrototypeOf(p, newParent);
     assert(Object.getPrototypeOf(p) === newParent, 'getPrototypeOf proxy after');
-    
+
     assertThrows("prototype value does not match: " + {},
       function() {
         var p = Proxy(Object.preventExtensions({}), {
@@ -810,11 +811,22 @@ load('../reflect.js');
         Object.setPrototypeOf(p, newParent);
       });
   }
-  
+
+  function testSetPrototypeOfUndefined() {
+    var obj = {};
+    var shouldThrow;
+    try {
+      Object.setPrototypeOf(obj, undefined);
+    } catch (ex) {
+      shouldThrow = ex;
+    }
+    assert(shouldThrow);
+  }
+
   // invoke experiment
   /*function testInvokeTrap() {
     // first test whether __noSuchMethod__ is supported
-    
+
     var t = {
       foo: function(x) { return x; }
     };
@@ -825,14 +837,14 @@ load('../reflect.js');
       },
       invoke: function(tgt, name, args, rcvr) {
         print('invoke ' + name);
-        return Reflect.invoke(tgt, name, args, rcvr);        
+        return Reflect.invoke(tgt, name, args, rcvr);
       }
     });
-    
+
     print(p.foo(2));
-    
+
   }*/
-    
+
   if (typeof window === "undefined") {
     global.test();
   }
