@@ -98,6 +98,7 @@ load('../reflect.js');
       testRevocableProxies();
       testSetPrototypeOf();
       testSetPrototypeOfUndefined();
+      testUpdatePropertyDescriptor();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -820,7 +821,21 @@ load('../reflect.js');
     } catch (ex) {
       shouldThrow = ex;
     }
-    assert(shouldThrow);
+    assert(shouldThrow, 'testSetPrototypeOfUndefined: cannot set to undefined');
+  }
+
+  function testUpdatePropertyDescriptor() {
+    var obj = {};
+    Object.defineProperty(obj, 'prop', {value: true, configurable: true});
+    var proxy = Proxy(obj, {
+      defineProperty: function(target, name, desc) {
+        return Object.defineProperty(obj, name, desc);
+      }
+    });
+    Object.defineProperty(proxy, 'prop', {value: function() { return false; }});
+    var descriptor = Object.getOwnPropertyDescriptor(obj, 'prop');
+    assert(typeof descriptor.value === 'function',
+           'testUpdatePropertyDescriptor: prop updated');
   }
 
   // invoke experiment

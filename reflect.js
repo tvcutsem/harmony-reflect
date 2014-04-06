@@ -366,10 +366,10 @@ function isFixed(name, target) {
 function isSealed(name, target) {
   var desc = Object.getOwnPropertyDescriptor(target, name);
   if (desc === undefined) { return false; }
-  return !desc.configurable;
+  return desc.configurable === false;
 }
 function isSealedDesc(desc) {
-  return desc !== undefined && !desc.configurable;
+  return desc !== undefined && desc.configurable === false;
 }
 
 /**
@@ -544,7 +544,7 @@ Validator.prototype = {
       }
     }
 
-    if (!desc.configurable && !isSealedDesc(targetDesc)) {
+    if (desc.configurable === false && !isSealedDesc(targetDesc)) {
       // if the property is configurable or non-existent on the target,
       // but is reported as a non-configurable property, it may later be
       // reported as configurable or non-existent, which violates the
@@ -668,7 +668,7 @@ Validator.prototype = {
         }
       }
 
-      if (!desc.configurable && !isSealedDesc(targetDesc)) {
+      if (desc.configurable === false && !isSealedDesc(targetDesc)) {
         // if the property is configurable or non-existent on the target,
         // but is successfully being redefined as a non-configurable property,
         // it may later be reported as configurable or non-existent, which violates
