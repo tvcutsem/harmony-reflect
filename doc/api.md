@@ -1,4 +1,4 @@
-# Standard API
+# Reflect API
 
   * [Proxy](#reflectproxytarget_handler)
   * [Proxy.revocable](#proxyrevocabletarget_handler)
