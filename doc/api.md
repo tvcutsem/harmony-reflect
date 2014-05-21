@@ -1,5 +1,22 @@
 # Standard API
 
+  * [Proxy](#reflectproxytarget_handler)
+  * [Proxy.revocable](#proxyrevocabletarget_handler)
+  * [Reflect.get](#reflectgettarget_name_receiver)
+  * [Reflect.set](#reflectsettarget_name_value_receiver)
+  * [Reflect.has](#reflecthastarget_name)
+  * [Reflect.apply](#reflectapplytarget_receiver_args)
+  * [Reflect.construct](#reflectconstructtarget_args)
+  * [Reflect.getOwnPropertyDescriptor](#reflectgetownpropertydescriptortarget_name)
+  * [Reflect.defineProperty](#reflectdefinepropertytarget_name_desc)
+  * [Reflect.getPrototypeOf](#reflectgetprototypeoftarget)
+  * [Reflect.setPrototypeOf](#reflectsetprototypeoftarget_newproto)
+  * [Reflect.deleteProperty](#reflectdeletepropertytarget_name)
+  * [Reflect.enumerate](#reflectenumeratetarget)
+  * [Reflect.preventExtensions](#reflectpreventextensionstarget)
+  * [Reflect.isExtensible](#reflectisextensibletarget)
+  * [Reflect.ownKeys](#reflectownkeystarget)
+
 ## Reflect.Proxy(target, handler)
 
 This is an alias for the global Proxy function.
