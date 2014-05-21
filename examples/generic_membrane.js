@@ -226,7 +226,15 @@
             var dryArgs = wetArgs.map(wetToDry);
             var dryThis = wetToDry(wetThis);
             try {
-              var dryResult = Reflect.apply(dryTarget, dryThis, dryArgs);            
+
+              var dryResult = null;
+
+              if (handler.onCall) {
+                  dryResult = handler.onCall(dryTarget, dryThis, dryArgs);
+              } else {
+                  dryResult = Reflect.apply(dryTarget, dryThis, dryArgs);
+              }
+
               var wetResult = dryToWet(dryResult);
               return wetResult;
             } catch (dryException) {
