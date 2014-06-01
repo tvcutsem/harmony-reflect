@@ -1,5 +1,21 @@
 # Proxy Handler API
 
+  * [get(target, name, receiver)](#gettarget_name_receiver)
+  * [set(target, name, value, receiver)](#settarget_name_value_receiver)
+  * [has(target, name)](#hastarget_name)
+  * [apply(target, receiver, args)](#applytarget_receiver_args)
+  * [construct(target, args)](#constructtarget_args)
+  * [getOwnPropertyDescriptor(target, name)](#getownpropertydescriptortarget_name)
+  * [defineProperty(target, name, desc)](#definepropertytarget_name_desc)
+  * [getOwnPropertyNames(target)](#getownpropertynamestarget)
+  * [getPrototypeOf(target)](#getprototypeoftarget)
+  * [setPrototypeOf(target, newProto)](#setprototypeoftarget_newproto)
+  * [deleteProperty(target, name)](#deletepropertytarget_name)
+  * [enumerate(target)](#enumeratetarget)
+  * [preventExtensions(target)](#preventextensionstarget)
+  * [isExtensible(target)](#isextensibletarget)
+  * [ownKeys(target)](#ownkeystarget)
+
 This API documents all the functions that a proxy handler object may implement to trap operations on a proxy object. These functions are also knowns as *traps*. All of these functions correspond one-to-one to a function with the same name and signature in the [Reflect API](api.md). If a trap wants to perform the "default behavior" for an intercepted operation, it can simply call that corresponding function from the handler API.
 
 As an example, the below proxy logs all `get` and `set` operations applied to it, then forwards the operations to its target object:
