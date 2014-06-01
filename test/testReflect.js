@@ -58,6 +58,19 @@ function assertThrows(message, fn) {
   }
 }
 
+function drainToArray(iterator) {
+  var props = [];
+  var nxt = iterator.next();
+  while (!nxt.done) {
+    props.push(nxt.value);
+    nxt = iterator.next();
+  }
+  if (nxt.value !== undefined) {
+    props.push(nxt.value);
+  }
+  return props; 
+}
+
 // the 'main' function
 function test() {
   
@@ -117,57 +130,18 @@ function test() {
            'deleteProperty failure');    
   }());
   
-  // enumerate(target : object) -> array[string]
+  // enumerate(target : object) -> iterator[string]
   (function(){
     var target = Object.create({ z:3 }, {
       x: { value:1, enumerable: true  },
       y: { value:2, enumerable: false },
     });
     var result = Reflect.enumerate(target);
+    result = drainToArray(result);
     assert(result.length === 2 &&
            result.indexOf('x') !== -1 &&
            result.indexOf('z') !== -1,
            'enumerate success');
-  }());
-  
-  // iterate(target : object) -> iterator
-  (function(){
-    var target = Object.create(Object.prototype, {
-      x: { value:1, enumerable: true  },
-      y: { value:2, enumerable: false },
-    });
-    var iterator = Reflect.iterate(target);
-    var result = [];
-    try {
-      while (true) {
-        result.push(iterator.next());
-      }
-    } catch (e) {
-      if (e !== StopIteration) throw e;
-    }
-    assert(result.length === 1 &&
-           result[0] === 'x',
-           'iterate success');
-  }());
-  
-  // freeze(target : object) -> bool
-  (function(){
-    var target = {x:1};
-    assert(Reflect.freeze(target) === true, 'freeze success');
-    assert(Object.isExtensible(target) === false, 'frozen -> non-extensible');
-    var desc = Reflect.getOwnPropertyDescriptor(target,'x');
-    assert(desc.configurable === false, 'frozen -> non-configurable');
-    assert(desc.writable === false, 'frozen -> non-writable');
-  }());
-  
-  // seal(target : object) -> bool
-  (function(){
-    var target = {x:1};
-    assert(Reflect.seal(target) === true, 'seal success');
-    assert(Object.isExtensible(target) === false, 'sealed -> non-extensible');
-    var desc = Reflect.getOwnPropertyDescriptor(target,'x');
-    assert(desc.configurable === false, 'sealed -> non-configurable'); 
-    assert(desc.writable === true, 'sealed -/-> non-writable'); 
   }());
   
   // preventExtensions(target : object) -> bool
@@ -189,27 +163,6 @@ function test() {
     assert(Reflect.has(target, 'z') === false, 'has failure');
   }());
   
-  // hasOwn(target : object, name : string) -> bool
-  (function(){
-    var proto = {x:1};
-    var target = Object.create(proto, {y: {value:2 }});
-    assert(Reflect.hasOwn(target, 'x') === false, 'hasOwn proto ok');
-    assert(Reflect.hasOwn(target, 'y') === true, 'hasOwn own ok');
-    assert(Reflect.hasOwn(target, 'z') === false, 'hasOwn failure');
-  }());
-  
-  // keys(target : object) -> array[string]
-  (function(){
-    var target = Object.create({z:3}, {
-      x: { value:1, enumerable: true  },
-      y: { value:2, enumerable: false },
-    });
-    var result = Reflect.keys(target);
-    assert(result.length === 1 &&
-           result[0] === 'x',
-           'keys success');
-  }());
-  
   // ownKeys(target : object) -> iterator
   (function(){
     var target = Object.create(Object.prototype, {
@@ -218,12 +171,10 @@ function test() {
     });
     var iterator = Reflect.ownKeys(target);
     var result = [];
-    try {
-      while (true) {
-        result.push(iterator.next());
-      }
-    } catch (e) {
-      if (e !== StopIteration) throw e;
+    var nxt = iterator.next();
+    while (!nxt.done) {
+      result.push(nxt.value);
+      nxt = iterator.next();
     }
     assert(result.length === 2,
            'ownKeys success');
@@ -375,9 +326,10 @@ function test() {
     var newProto = {};
     Reflect.setPrototypeOf(target, newProto);
     assert(Reflect.getPrototypeOf(target) === newProto);
-    assertThrows("prototype must be an object or null", function() {
-      Reflect.setPrototypeOf(target, undefined);
-    });
+    assertThrows("Object prototype may only be an Object or null: undefined",
+      function() {
+        Reflect.setPrototypeOf(target, undefined);
+      });
   }());
   
 }

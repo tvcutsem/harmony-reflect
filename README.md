@@ -35,10 +35,10 @@ Compatibility
 
 The `Reflect` API, with support for proxies, was tested on:
 
-  * Firefox 12 (should work since Firefox 4)
-  * Chrome 19, with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
-  * `node --harmony` (in node v0.7.8)
-  * `v8 --harmony` (on 3.11.0, should work since at least v3.6)
+  * Firefox (>= v4.0)
+  * Chrome (>= v19), with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
+  * `node --harmony` (>= v0.7.8)
+  * `v8 --harmony` (>= v3.6)
   * spidermonkey shell
   
 Dependencies
@@ -54,7 +54,9 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.{freeze,seal,preventExtensions}
     Object.{isFrozen,isSealed,isExtensible}
     Object.getPrototypeOf
+    Object.keys
     Object.prototype.valueOf
+    Object.prototype.hasOwnProperty
     Object.getOwnPropertyDescriptor
     Object.defineProperty
     Function.prototype.toString
@@ -87,8 +89,14 @@ handlers must implement.
 
 Spec Compatibility
 ==================
-  
+
 This library differs from the draft ECMAScript 6 spec. as follows:
 
-  * In ES6, `Proxy` will be a constructor function that will _require_ the use of `new`. That is, you must write `new Proxy(target, handler)`. This library exports `Proxy` as an ordinary function which may be called without using the `new` operator.
-  * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`). It is as yet unclear how ES6 will spec these operations in the presence of proxies.
+  * In ES6, `Proxy` will be a constructor function that will _require_ the use
+    of `new`. That is, you must write `new Proxy(target, handler)`. This library
+    exports `Proxy` as an ordinary function which may be called without using
+    the `new` operator.
+  * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work
+    transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`).
+    The current ES6 draft spec does not treat proxies-for-arrays as genuine
+    arrays for these operations.

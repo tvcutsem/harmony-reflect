@@ -48,11 +48,14 @@ See further notes below for details.
   <tr>
     <td>property enumeration</td>
     <td>for (var prop in proxy) { ... }</td>
-    <td><pre>var $props = handler.enumerate(target);
-for (var $i = 0; i < $props.length; i++) {
-  var prop = String($props[i]);
+    <td><pre>var $iterator = handler.enumerate(target);
+var $nxt = iterator.next();
+while (!$nxt.done) {
+  var prop = String($nxt.value);
   ...
-}</pre></td>
+  $nxt = $iterator.next();
+}
+</pre></td>
   </tr>
   <tr>
     <td>inherited property access</td>
@@ -122,6 +125,11 @@ for (var $i = 0; i < $props.length; i++) {
     <td colspan="3">(Static) operations on Object</td>
   </tr>
   <tr>
+    <td>getOwnPropertyNames</td>
+    <td>Object.getOwnPropertyNames(proxy)</td>
+    <td>handler.getOwnPropertyNames(target)</td>
+  </tr>
+  <tr>
     <td>getOwnPropertyDescriptor (9)</td>
     <td>Object.getOwnPropertyDescriptor(proxy, 'foo')</td>
     <td>handler.getOwnPropertyDescriptor(target, 'foo')</td>
@@ -159,58 +167,11 @@ for (var $i = 0; i < $props.length; i++) {
     <td>Reflect.ownKeys(proxy)</td>
     <td>handler.ownKeys(target)</td>
   </tr>
-  <tr>
-    <td colspan="3">Deprecated (these operations are intercepted differently in ES6. Below is how they are intercepted using this shim)</td>
-  </tr>
-  <tr>
-    <td>freeze</td>
-    <td>Object.freeze(proxy)</td>
-    <td>handler.freeze(target)</td>
-  </tr>
-  <tr>
-    <td>seal</td>
-    <td>Object.seal(proxy)</td>
-    <td>handler.seal(target)</td>
-  </tr>
-  <tr>
-    <td>isFrozen</td>
-    <td>Object.isFrozen(proxy)</td>
-    <td>handler.isFrozen(target)</td>
-  </tr>
-  <tr>
-    <td>isSealed</td>
-    <td>Object.isSealed(proxy)</td>
-    <td>handler.isSealed(target)</td>
-  </tr>
-  <tr>
-    <td>getOwnPropertyNames</td>
-    <td>Object.getOwnPropertyNames(proxy)</td>
-    <td>handler.getOwnPropertyNames(target)</td>
-  </tr>
-  <tr>
-    <td>keys</td>
-    <td>Object.keys(proxy)</td>
-    <td>handler.keys(target)</td>
-  </tr>
-  <tr>
-    <td>iteration (2)</td>
-    <td>for (var elem of proxy) { ... }</td>
-    <td><pre>var $iterator = handler.iterate(target);
-try {
-  while (true) {
-    var elem = $iterator.next();
-    ...
-  }
-} catch (e) {
-  if (e !== StopIteration) throw e;
-}</pre></td>
-  </tr>
 </table>
 
 ## Notes
 
   * (1): in Javascript, a method call like `obj.foo(1,2,3)` is defined as looking up the "foo" property on `obj`, and then calling the resulting function with `obj` as the `this`-binding. If `obj` is a proxy, the same strategy applies. There is no separate `invoke` trap.
-  * (2): the `for-of` statement is forthcoming in ECMAScript 6.
   * (3): the syntax `...args` is ECMAScript 6 syntax for "spreading" arguments into a call. `f(...[1,2,3])` is equivalent to `f(1,2,3)`. Function calls can only be intercepted if the target is a function, i.e. `typeof target === "function"`.
   * (4): this assumes that the proxy was installed as a method on `object`, e.g. `var object = { proxy: new Proxy(target, handler) }`.
   * (5): assuming that `proxy.call`, which triggers the proxy's "get" trap, returned `Function.prototype.call`.
