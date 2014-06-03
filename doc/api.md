@@ -1,4 +1,4 @@
-# Standard API
+# Reflect API
 
   * [new Proxy(target, handler)](#newproxytarget_handler)
   * [Proxy.revocable(target, handler)](#proxyrevocabletarget_handler)
@@ -19,8 +19,6 @@
   * [Reflect.ownKeys(target)](#reflectownkeystarget)
 
 ## new Proxy(target, handler)
-
-This is an alias for the global Proxy function.
 
 Creates and returns a new proxy object. The `handler` object may define [trap functions](handler_api.md). These traps are called whenever an operation is applied to the proxy object.
 
