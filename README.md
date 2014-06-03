@@ -19,8 +19,8 @@ Then:
     node --harmony
     > require('harmony-reflect');
 
-API
-===
+API Docs
+========
 
 This module exports a single object named `Reflect`.
 
