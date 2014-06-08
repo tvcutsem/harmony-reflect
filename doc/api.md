@@ -1,25 +1,24 @@
 # Reflect API
 
-  * [Proxy](#reflectproxytarget_handler)
-  * [Proxy.revocable](#proxyrevocabletarget_handler)
-  * [Reflect.get](#reflectgettarget_name_receiver)
-  * [Reflect.set](#reflectsettarget_name_value_receiver)
-  * [Reflect.has](#reflecthastarget_name)
-  * [Reflect.apply](#reflectapplytarget_receiver_args)
-  * [Reflect.construct](#reflectconstructtarget_args)
-  * [Reflect.getOwnPropertyDescriptor](#reflectgetownpropertydescriptortarget_name)
-  * [Reflect.defineProperty](#reflectdefinepropertytarget_name_desc)
-  * [Reflect.getPrototypeOf](#reflectgetprototypeoftarget)
-  * [Reflect.setPrototypeOf](#reflectsetprototypeoftarget_newproto)
-  * [Reflect.deleteProperty](#reflectdeletepropertytarget_name)
-  * [Reflect.enumerate](#reflectenumeratetarget)
-  * [Reflect.preventExtensions](#reflectpreventextensionstarget)
-  * [Reflect.isExtensible](#reflectisextensibletarget)
-  * [Reflect.ownKeys](#reflectownkeystarget)
+  * [new Proxy(target, handler)](#newproxytarget_handler)
+  * [Proxy.revocable(target, handler)](#proxyrevocabletarget_handler)
+  * [Reflect.get(target, name, [receiver])](#reflectgettarget_name_receiver)
+  * [Reflect.set(target, name, value, [receiver])](#reflectsettarget_name_value_receiver)
+  * [Reflect.has(target, name)](#reflecthastarget_name)
+  * [Reflect.apply(target, receiver, [args])](#reflectapplytarget_receiver_args)
+  * [Reflect.construct(target, args)](#reflectconstructtarget_args)
+  * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget_name)
+  * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget_name_desc)
+  * [Reflect.getOwnPropertyNames(target)](#reflectgetownpropertynamestarget)
+  * [Reflect.getPrototypeOf(target)](#reflectgetprototypeoftarget)
+  * [Reflect.setPrototypeOf(target, newProto)](#reflectsetprototypeoftarget_newproto)
+  * [Reflect.deleteProperty(target, name)](#reflectdeletepropertytarget_name)
+  * [Reflect.enumerate(target)](#reflectenumeratetarget)
+  * [Reflect.preventExtensions(target)](#reflectpreventextensionstarget)
+  * [Reflect.isExtensible(target)](#reflectisextensibletarget)
+  * [Reflect.ownKeys(target)](#reflectownkeystarget)
 
-## Reflect.Proxy(target, handler)
-
-This is an alias for the global Proxy function.
+## new Proxy(target, handler)
 
 Creates and returns a new proxy object. The `handler` object may define [trap functions](handler_api.md). These traps are called whenever an operation is applied to the proxy object.
 
@@ -115,6 +114,13 @@ If `target` is a proxy, calls that proxy's `defineProperty` trap.
 
 `name` must be a string and `desc` must be a valid property descriptor object.
 
+## Reflect.getOwnPropertyNames(target)
+
+Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
+
+Same as the ES5 built-in Object.getOwnPropertyNames(target).
+If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
+
 ## Reflect.getPrototypeOf(target)
 
 Returns the prototype link of the `target` object.
@@ -140,15 +146,21 @@ Attempts to delete the `name` property on `target`. Calling this function is equ
 
 ## Reflect.enumerate(target)
 
-Returns an array of strings representing the enumerable own and inherited properties of the `target` object.
+Returns an ES6 iterator representing the enumerable own and inherited properties of the `target` object.
 
 If `target` is a proxy, calls that proxy's `enumerate` trap.
 
-The names are determined as if by executing:
+The ES6 iterator can be drained into an array as follows:
 
     var props = [];
-    for (var name in target) {
-      props.push(name);
+    var iterator = Reflect.enumerate(target);
+    var nxt = iterator.next();
+    while (!nxt.done) {
+      props.push(nxt.value);
+      nxt = iterator.next();
+    }
+    if (nxt.value !== undefined) {
+      props.push(nxt.value);
     }
     return props;
 
@@ -171,110 +183,3 @@ Returns an iterator that produces all of the string-keyed own property names of 
 If `target` is a proxy, calls that proxy's `ownKeys` trap.
 
 Note: in ES6, this method returns an iterator producing strings _or symbols_, rather than just strings. Symbols are a new feature in ES6 that this library does not attempt to emulate. In this library, the method behaves just like the ES5 built-in `Object.keys(target)`, except that it returns an iterator rather than an array.
-
-# Non-standard API
-
-The functions defined below are non-standard. They are not part of the ES6 reflection API.
-
-## Reflect.Handler()
-
-Constructor function whose prototype represents a proxy handler that readily implements all "derived" traps.
-
-Use `Handler` if you want to implement just the bare minimum number of traps (the "fundamental" traps), inheriting sensible default operations for all the other traps (the "derived" traps).
-
-The intent is for users to "subclass" `Handler` and override the "fundamental" trap methods, like so:
-
-    // the "subclass" constructor function
-    function MyHandler(){};
-    
-    // set its prototype to an object inheriting from Handler.prototype
-    MyHandler.prototype = new Reflect.Handler();
-    
-    // now override one or more "fundamental" traps, e.g.:
-    MyHandler.prototype.defineProperty = function(tgt,name,desc) {...};
-    
-    // create a proxy with an instance of the Handler "subclass"
-    var proxy = new Proxy(target, new MyHandler());
-    
-    // MyHandler's inherited "set" trap will call the overridden "defineProperty" trap
-    proxy.foo = 42;
-
-A "derived" operation such as `name in proxy` will trigger the proxy's `has` trap, which is inherited from `Handler`. That trap will in turn call the overridden `getOwnPropertyDescriptor` trap to figure out if the proxy has the property.
-
-The following `Handler` traps are regarded as "fundamental", and by default forward to the target object: getOwnPropertyDescriptor, getOwnPropertyNames, getPrototypeOf, defineProperty, deleteProperty, preventExtensions, isExtensible, apply.
-
-All other traps are "derived", and default to one or more of the above "fundamental" traps: get, set, has, hasOwn, keys, enumerate, iterate, seal, freeze, isSealed, isFrozen, construct.
-
-[More details](http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api)
-
-# Deprecated functions
-
-The functions defined below were at one point part of the official ES6 API but have since been
-deprecated. This library continues to implement them for the sake of backwards-compatibility.
-
-## Reflect.hasOwn(target, name)
-
-Returns a boolean indicating whether `target` has an own (i.e. non-inherited) property called "name".
-
-Equivalent to performing `target.hasOwnProperty(name)`, assuming `target` inherits the original `hasOwnProperty` definition from `Object.prototype`.
-
-If `target` is a proxy, calls that proxy's `hasOwn` trap.
-
-`name` must be a string.
-
-## Reflect.getOwnPropertyNames(target)
-
-Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
-
-Same as the ES5 built-in Object.getOwnPropertyNames(target).
-If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
-
-## Reflect.keys(target)
-
-Returns an array of strings representing the `target` object's own, enumerable property names.
-
-Same as the ES5 built-in `Object.keys(target)`.
-
-If `target` is a proxy, calls that proxy's `keys` trap.
-
-## Reflect.freeze(target)
-
-Freezes the object as if by calling `Object.freeze(target)`. Returns a boolean indicating whether the object was successfully frozen.
-
-If `target` is a proxy, calls that proxy's `freeze` trap.
-
-## Reflect.seal(target)
-
-Seals the object as if by calling `Object.seal(target)`. Returns a boolean indicating whether the object was successfully sealed.
-
-If `target` is a proxy, calls that proxy's `seal` trap.
-
-## Reflect.isFrozen(target)
-
-Returns a boolean indicating whether `target` is frozen as if by calling `Object.isFrozen(target)`.
-
-If `target` is a proxy, calls that proxy's `isFrozen` trap.
-
-## Reflect.isSealed(target)
-
-Returns a boolean indicating whether `target` is sealed as if by calling `Object.isSealed(target)`.
-
-If `target` is a proxy, calls that proxy's `isSealed` trap.
-
-## Reflect.iterate(target)
-
-Returns an iterator on the target object. You can call `next()` on the iterator to retrieve subsequent elements until it throws a `StopIteration` exception, like so:
-
-    var iterator = Reflect.iterate(obj);
-    try {
-      while (true) {
-        var elem = iterator.next();
-        process(elem);
-      }
-    } catch (e) {
-      if (e !== StopIteration) throw e;
-    }
-
-However, in ES6 one would usually use the new `for-of` loop to exhaust an iterator.
-
-If `target` is a proxy, calls that proxy's `iterate` trap.

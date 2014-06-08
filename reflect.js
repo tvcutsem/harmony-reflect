@@ -65,7 +65,9 @@
  //  - Object.prototype.valueOf
  //  - Object.prototype.isPrototypeOf
  //  - Object.prototype.toString
+ //  - Object.prototype.hasOwnProperty
  //  - Object.getOwnPropertyDescriptor
+ //  - Object.keys
  //  - Function.prototype.toString
  //  - Date.prototype.toString
  //  - Array.isArray
@@ -77,7 +79,7 @@
 
  // ----------------------------------------------------------------------------
 
-(function(global, nonstrictDelete){ // function-as-module pattern
+(function(global){ // function-as-module pattern
 "use strict";
 
 // === Direct Proxies: Invariant Enforcement ===
@@ -348,9 +350,11 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_getPrototypeOf =           Object.getPrototypeOf,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
     prim_defineProperty =           Object.defineProperty,
+    prim_keys =                     Object.keys,
     prim_isArray =                  Array.isArray,
     prim_concat =                   Array.prototype.concat,
-    prim_isPrototypeOf =            Object.prototype.isPrototypeOf;
+    prim_isPrototypeOf =            Object.prototype.isPrototypeOf,
+    prim_hasOwnProperty =           Object.prototype.hasOwnProperty;
 
 // these will point to the patched versions of the respective methods on
 // Object. They are used within this module as the "intrinsic" bindings
@@ -431,6 +435,96 @@ function isCompatibleDescriptor(extensible, current, desc) {
         return false;
       }
     }
+  }
+  return true;
+}
+
+// ES6 7.3.11 SetIntegrityLevel
+//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
+//    Reflect.ownKeys (as ownKeys does no invariant checking)
+// level is one of "sealed" or "frozen"
+function setIntegrityLevel(target, level) {
+  var ownProps = Object.getOwnPropertyNames(target);
+  var pendingException = undefined;
+  if (level === "sealed") {
+    var l = +ownProps.length;
+    var k;
+    for (var i = 0; i < l; i++) {
+      k = String(ownProps[i]);
+      try {
+        Object.defineProperty(target, k, { configurable: false });
+      } catch (e) {
+        if (pendingException === undefined) {
+          pendingException = e;
+        }
+      }
+    }
+  } else {
+    // level === "frozen"
+    var l = +ownProps.length;
+    var k;
+    for (var i = 0; i < l; i++) {
+      k = String(ownProps[i]);
+      try {
+        var currentDesc = Object.getOwnPropertyDescriptor(target, k);
+        if (currentDesc !== undefined) {
+          var desc;
+          if (isAccessorDescriptor(currentDesc)) {
+            desc = { configurable: false }
+          } else {
+            desc = { configurable: false, writable: false }
+          }
+          Object.defineProperty(target, k, desc);
+        }        
+      } catch (e) {
+        if (pendingException === undefined) {
+          pendingException = e;
+        }
+      }
+    }
+  }
+  return Reflect.preventExtensions(target);
+}
+
+// ES6 7.3.12 TestIntegrityLevel
+//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
+//    Reflect.ownKeys (as ownKeys does no invariant checking)
+// level is one of "sealed" or "frozen"
+function testIntegrityLevel(target, level) {
+  var isExtensible = Object_isExtensible(target);
+  if (isExtensible) return false;
+  
+  var ownProps = Object.getOwnPropertyNames(target);
+  var pendingException = undefined;
+  var configurable = false;
+  var writable = false;
+  
+  var l = +ownProps.length;
+  var k;
+  var currentDesc;
+  for (var i = 0; i < l; i++) {
+    k = String(ownProps[i]);
+    try {
+      currentDesc = Object.getOwnPropertyDescriptor(target, k);
+      configurable = configurable || currentDesc.configurable;
+      if (isDataDescriptor(currentDesc)) {
+        writable = writable || currentDesc.writable;
+      }
+    } catch (e) {
+      if (pendingException === undefined) {
+        pendingException = e;
+        configurable = true;
+      }
+    }
+  }
+  if (pendingException !== undefined) {
+    throw pendingException;
+  }
+  if (level === "frozen" && writable === true) {
+    return false;
+  }
+  if (configurable === true) {
+    return false;
   }
   return true;
 }
@@ -685,48 +779,6 @@ Validator.prototype = {
   },
 
   /**
-   * On success, check whether the target object is indeed frozen.
-   */
-  freeze: function() {
-    var trap = this.getTrap("freeze");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.freeze(this.target);
-    }
-
-    var success = trap.call(this.handler, this.target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      if (!Object_isFrozen(this.target)) {
-        throw new TypeError("can't report non-frozen object as frozen: "+
-                            this.target);
-      }
-    }
-    return success;
-  },
-
-  /**
-   * On success, check whether the target object is indeed sealed.
-   */
-  seal: function() {
-    var trap = this.getTrap("seal");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.seal(this.target);
-    }
-
-    var success = trap.call(this.handler, this.target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      if (!Object_isSealed(this.target)) {
-        throw new TypeError("can't report non-sealed object as sealed: "+
-                            this.target);
-      }
-    }
-    return success;
-  },
-
-  /**
    * On success, check whether the target object is indeed non-extensible.
    */
   preventExtensions: function() {
@@ -928,53 +980,6 @@ Validator.prototype = {
 
   /**
    * If name denotes a fixed property, check whether the trap returns true.
-   * If name denotes a new property on a non-extensible proxy, check whether
-   * the trap returns false.
-   */
-  hasOwn: function(name) {
-    "use strict";
-
-    var trap = this.getTrap("hasOwn");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.hasOwn(this.target, name);
-    }
-
-    name = String(name);
-    var res = trap.call(this.handler, this.target, name);
-    res = !!res; // coerce to Boolean
-
-    if (res === false) {
-      if (isSealed(name, this.target)) {
-        throw new TypeError("cannot report existing non-configurable own "+
-                            "property '"+name + "' as a non-existent own "+
-                            "property");
-      }
-      if (!Object.isExtensible(this.target) &&
-          isFixed(name, this.target)) {
-          // if handler is allowed to return false, we cannot guarantee
-          // that it will return true for this property later.
-          // Once a property has been reported as non-existent on a non-extensible
-          // object, it should forever be reported as non-existent
-          throw new TypeError("cannot report existing own property '"+name+
-                              "' as non-existent on a non-extensible object");
-      }
-    } else {
-      // res === true, if the proxy is non-extensible,
-      // check that name is no new property
-      if (!Object.isExtensible(this.target)) {
-        if (!isFixed(name, this.target)) {
-          throw new TypeError("cannot report a new own property '"+
-                              name + "' on a non-extensible object");
-        }
-      }
-    }
-
-    return res;
-  },
-
-  /**
-   * If name denotes a fixed property, check whether the trap returns true.
    */
   has: function(name) {
     var trap = this.getTrap("has");
@@ -1010,21 +1015,6 @@ Validator.prototype = {
 
     return res;
   },
-
-  /**
-   * Experimental implementation of the invoke() trap on platforms
-   * that support __noSuchMethod__ (e.g. Spidermonkey/FF).
-   */
-  /*invoke: function(receiver, name, args) {
-    var trap = this.getTrap("invoke");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.invoke(this.target, name, args, receiver);
-    }
-
-    name = String(name);
-    return trap.call(this.handler, this.target, name, args, receiver);
-  },*/
 
   /**
    * If name denotes a fixed non-configurable, non-writable data property,
@@ -1126,29 +1116,57 @@ Validator.prototype = {
    * whether the returned result contains at least all sealed enumerable properties
    * of the target object.
    *
-   * The trap result is normalized.
-   * The trap result is not returned directly. Instead:
-   *  - create and return a fresh Array,
-   *  - of which each element is coerced to String,
-   *  - which does not contain duplicates
+   * The trap should return an iterator.
    *
-   * TODO(tvcutsem) trap return value should change from [string] to iterator.
+   * We convert the iterator to an array as current implementations expect
+   * enumerate to still return an array of strings.
    */
   enumerate: function() {
     var trap = this.getTrap("enumerate");
     if (trap === undefined) {
       // default forwarding behavior
-      return Reflect.enumerate(this.target);
+      var trapResult = Reflect.enumerate(this.target);
+      var result = [];
+      var nxt = trapResult.next();
+      while (!nxt.done) {
+        result.push(String(nxt.value));
+        nxt = trapResult.next();
+      }
+      return result;
     }
 
     var trapResult = trap.call(this.handler, this.target);
-
+    
+    if (trapResult === null ||
+        trapResult === undefined ||
+        trapResult.next === undefined) {
+      throw new TypeError("enumerate trap should return an iterator, got: "+
+                          trapResult);    
+    }
+    
     // propNames is used as a set of strings
     var propNames = Object.create(null);
-    var numProps = +trapResult.length;
-    var result = new Array(numProps);
-
-    for (var i = 0; i < numProps; i++) {
+    
+    // var numProps = +trapResult.length;
+    var result = []; // new Array(numProps);
+    
+    // trapResult is supposed to be an iterator
+    // drain iterator to array as current implementations still expect
+    // enumerate to return an array of strings
+    var nxt = trapResult.next();
+    
+    while (!nxt.done) {
+      var s = String(nxt.value);
+      if (propNames[s]) {
+        throw new TypeError("enumerate trap cannot list a "+
+                            "duplicate property '"+s+"'");
+      }
+      propNames[s] = true;
+      result.push(s);
+      nxt = trapResult.next();
+    }
+    
+    /*for (var i = 0; i < numProps; i++) {
       var s = String(trapResult[i]);
       if (propNames[s]) {
         throw new TypeError("enumerate trap cannot list a "+
@@ -1157,7 +1175,7 @@ Validator.prototype = {
 
       propNames[s] = true;
       result[i] = s;
-    }
+    } */
 
     var ownEnumerableProps = Object.keys(this.target);
     var target = this.target;
@@ -1186,23 +1204,9 @@ Validator.prototype = {
   },
 
   /**
-   * The iterate trap should return an iterator object.
+   * The iterate trap is deprecated by the enumerate trap.
    */
-  iterate: function() {
-    var trap = this.getTrap("iterate");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.iterate(this.target);
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-
-    if (Object(trapResult) !== trapResult) {
-      throw new TypeError("iterate trap should return an iterator object, "+
-                          "got: "+ trapResult);
-    }
-    return trapResult;
-  },
+  iterate: Validator.prototype.enumerate,
 
   /**
    * Any own non-configurable properties of the target that are not included
@@ -1215,7 +1219,10 @@ Validator.prototype = {
    *  - create and return a fresh Array,
    *  - of which each element is coerced to String,
    *  - which does not contain duplicates
+   *
+   * FIXME: keys trap is deprecated
    */
+  /*
   keys: function() {
     var trap = this.getTrap("keys");
     if (trap === undefined) {
@@ -1271,11 +1278,11 @@ Validator.prototype = {
 
     return result;
   },
-
+  */
+  
   /**
-   * In ES6, this trap is called for all operations that require a list
-   * of an object's properties, including Object.getOwnPropertyNames
-   * and Object.keys.
+   * This trap is called a.o. by Object.keys, which filters out only
+   * the enumerable own properties.
    *
    * The trap should return an iterator. The proxy implementation only
    * checks whether the return value is an object.
@@ -1289,7 +1296,9 @@ Validator.prototype = {
 
     var trapResult = trap.call(this.handler, this.target);
 
-    if (trapResult === null || typeof trapResult !== "object") {
+    if (trapResult === null ||
+        trapResult === undefined ||
+        typeof trapResult !== "object") {
       throw new TypeError("ownKeys should return an iterator object, got " +
                           trapResult);
     }
@@ -1333,58 +1342,6 @@ Validator.prototype = {
     } else {
       throw new TypeError("new: "+ target + " is not a function");
     }
-  },
-
-  /**
-   * Checks whether the trap result is consistent with the state of the
-   * wrapped target.
-   */
-  isSealed: function() {
-    var trap = this.getTrap("isSealed");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.isSealed(this.target);
-    }
-
-    var result = trap.call(this.handler, this.target);
-    result = !!result; // coerce to Boolean
-    var state = Object_isSealed(this.target);
-    if (result !== state) {
-      if (result) {
-        throw new TypeError("cannot report unsealed object as sealed: "+
-                             this.target);
-      } else {
-        throw new TypeError("cannot report sealed object as unsealed: "+
-                             this.target);
-      }
-    }
-    return state;
-  },
-
-  /**
-   * Checks whether the trap result is consistent with the state of the
-   * wrapped target.
-   */
-  isFrozen: function() {
-    var trap = this.getTrap("isFrozen");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.isFrozen(this.target);
-    }
-
-    var result = trap.call(this.handler, this.target);
-    result = !!result; // coerce to Boolean
-    var state = Object_isFrozen(this.target);
-    if (result !== state) {
-      if (result) {
-        throw new TypeError("cannot report unfrozen object as frozen: "+
-                             this.target);
-      } else {
-        throw new TypeError("cannot report frozen object as unfrozen: "+
-                             this.target);
-      }
-    }
-    return state;
   }
 };
 
@@ -1412,28 +1369,10 @@ Object.preventExtensions = function(subject) {
   }
 };
 Object.seal = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    if (vHandler.seal()) {
-      return subject;
-    } else {
-      throw new TypeError("seal on "+subject+" rejected");
-    }
-  } else {
-    return prim_seal(subject);
-  }
+  return setIntegrityLevel(subject, "sealed");
 };
 Object.freeze = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    if (vHandler.freeze()) {
-      return subject;
-    } else {
-      throw new TypeError("freeze on "+subject+" rejected");
-    }
-  } else {
-    return prim_freeze(subject);
-  }
+  return setIntegrityLevel(subject, "frozen");
 };
 Object.isExtensible = Object_isExtensible = function(subject) {
   var vHandler = directProxies.get(subject);
@@ -1444,20 +1383,10 @@ Object.isExtensible = Object_isExtensible = function(subject) {
   }
 };
 Object.isSealed = Object_isSealed = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return vHandler.isSealed();
-  } else {
-    return prim_isSealed(subject);
-  }
+  return testIntegrityLevel(subject, "sealed");
 };
 Object.isFrozen = Object_isFrozen = function(subject) {
-  var vHandler = directProxies.get(subject);
-  if (vHandler !== undefined) {
-    return vHandler.isFrozen();
-  } else {
-    return prim_isFrozen(subject);
-  }
+  return testIntegrityLevel(subject, "frozen");
 };
 Object.getPrototypeOf = Object_getPrototypeOf = function(subject) {
   var vHandler = directProxies.get(subject);
@@ -1515,6 +1444,26 @@ Object.defineProperty = function(subject, name, desc) {
     return prim_defineProperty(subject, name, desc);
   }
 };
+
+Object.keys = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    var ownKeysIterator = vHandler.ownKeys();
+    var nxt = ownKeysIterator.next();
+    var result = [];
+    while (!nxt.done) {
+      var k = String(nxt.value);
+      var desc = Object.getOwnPropertyDescriptor(subject, k);
+      if (desc !== undefined && desc.enumerable === true) {
+        result.push(k);
+      }
+      nxt = ownKeysIterator.next();
+    }
+    return result;
+  } else {
+    return prim_keys(subject);
+  }
+}
 
 // returns whether an argument is a reference to an object,
 // which is legal as a WeakMap key.
@@ -1669,16 +1618,29 @@ Object.setPrototypeOf = function(target, newProto) {
     }
   } else {
     if (!Object_isExtensible(target)) {
-      throw new TypeError("can't set prototype on non-extensible object: " + target);
+      throw new TypeError("can't set prototype on non-extensible object: " +
+                          target);
     }
     if (prim_setPrototypeOf)
       return prim_setPrototypeOf(target, newProto);
 
     if (Object(newProto) !== newProto || newProto === null) {
-      throw new TypeError("prototype must be an object or null")
+      throw new TypeError("Object prototype may only be an Object or null: " +
+                         newProto);
+      // throw new TypeError("prototype must be an object or null")
     }
     __proto__setter.call(target, newProto);
     return target;
+  }
+}
+
+Object.prototype.hasOwnProperty = function(name) {
+  var handler = safeWeakMapGet(directProxies, this);
+  if (handler !== undefined) {
+    var desc = handler.getOwnPropertyDescriptor(name);
+    return desc !== undefined;
+  } else {
+    return prim_hasOwnProperty.call(this, name);
   }
 }
 
@@ -1759,41 +1721,70 @@ var Reflect = global.Reflect = {
     return true;
   },
   deleteProperty: function(target, name) {
-    return nonstrictDelete(target, name);
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.deleteProperty(target, name);
+    }
+    
+    var desc = Object.getOwnPropertyDescriptor(target, name);
+    if (desc === undefined) {
+      return true;
+    }
+    if (desc.configurable === true) {
+      delete target[name];
+      return true;
+    }
+    return false;    
   },
   getPrototypeOf: function(target) {
     return Object.getPrototypeOf(target);
   },
   setPrototypeOf: function(target, newProto) {
-    Object.setPrototypeOf(target, newProto);
-    return true;
-  },
-  freeze: function(target) {
-    Object.freeze(target);
-    return true;
-  },
-  seal: function(target) {
-    Object.seal(target);
+    
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.setPrototypeOf(newProto);
+    }
+    
+    if (Object(newProto) !== newProto || newProto === null) {
+      throw new TypeError("Object prototype may only be an Object or null: " +
+                         newProto);
+    }
+    
+    if (!Object_isExtensible(target)) {
+      return false;
+    }
+    
+    var current = Object.getPrototypeOf(target);
+    if (sameValue(current, newProto)) {
+      return true;
+    }
+    
+    if (prim_setPrototypeOf) {
+      try {
+        prim_setPrototypeOf(target, newProto);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    __proto__setter.call(target, newProto);
     return true;
   },
   preventExtensions: function(target) {
-    Object.preventExtensions(target);
+    var handler = directProxies.get(target);
+    if (handler !== undefined) {
+      return handler.preventExtensions();
+    }
+    prim_preventExtensions(target);
     return true;
   },
   isExtensible: function(target) {
     return Object.isExtensible(target);
   },
-  isSealed: function(target) {
-    return Object.isSealed(target);
-  },
-  isFrozen: function(target) {
-    return Object.isFrozen(target);
-  },
   has: function(target, name) {
     return name in target;
-  },
-  hasOwn: function(target, name) {
-    return ({}).hasOwnProperty.call(target, name);
   },
   get: function(target, name, receiver) {
     receiver = receiver || target;
@@ -1903,40 +1894,34 @@ var Reflect = global.Reflect = {
     var fun = Reflect.get(target, name, receiver);
     return Function.prototype.apply.call(fun, receiver, args);
   },*/
-  enumerate: function(target) {
+  /*enumerate: function(target) {
     var result = [];
     for (var name in target) { result.push(name); };
     return result;
-  },
-  iterate: function(target) {
-    // in ES-next: for (var name of target) { ... }
+  },*/
+  enumerate: function(target) {
     var handler = directProxies.get(target);
     if (handler !== undefined) {
-      return handler.iterate(handler.target);
+      return handler.enumerate(handler.target);
     }
 
-    // non-standard iterator support, used today
-    if ('__iterator__' in target) return target.__iterator__;
-
-    var result = Reflect.enumerate(target);
+    var result = [];
+    for (var name in target) { result.push(name); };
     var l = +result.length;
     var idx = 0;
     return {
       next: function() {
-        if (idx === l) throw StopIteration;
-        return result[idx++];
+        if (idx === l) return { done: true };
+        return { done: false, value: result[idx++] };
       }
     };
   },
-  keys: function(target) {
-    return Object.keys(target);
-  },
-  // imperfect ownKeys implemenation: in ES6, should also include
+  // imperfect ownKeys implementation: in ES6, should also include
   // symbol-keyed properties.
   ownKeys: function(target) {
     var handler = directProxies.get(target);
     if (handler !== undefined) {
-      return handler.ownKeys(handler.target);
+      return handler.ownKeys();
     }
 
     var result = Reflect.getOwnPropertyNames(target);
@@ -1944,8 +1929,8 @@ var Reflect = global.Reflect = {
     var idx = 0;
     return {
       next: function() {
-        if (idx === l) throw StopIteration;
-        return result[idx++];
+        if (idx === l) { return { done: true } };
+        return { done: false, value: result[idx++] };
       }
     };
   },
@@ -1969,272 +1954,6 @@ var Reflect = global.Reflect = {
   }
 };
 
-// ============= Handler API =============
-// !! Deprecated implementation. See handlers.js for an up-to-date implementation.
-// see http://wiki.ecmascript.org/doku.php?id=harmony:virtual_object_api
-
-function forward(name) {
-  return function(/*...args*/) {
-    var args = Array.prototype.slice.call(arguments);
-    return Reflect[name].apply(this, args);
-  };
-}
-
-function Handler() { };
-global.Reflect.Handler = Handler;
-Handler.prototype = {
-  // fundamental traps
-  getOwnPropertyDescriptor: forward("getOwnPropertyDescriptor"),
-  getOwnPropertyNames:      forward("getOwnPropertyNames"),
-  getPrototypeOf:           forward("getPrototypeOf"),
-  setPrototypeOf:           forward("setPrototypeOf"),
-  defineProperty:           forward("defineProperty"),
-  deleteProperty:           forward("deleteProperty"),
-  preventExtensions:        forward("preventExtensions"),
-  isExtensible:             forward("isExtensible"),
-  apply:                    forward("apply"),
-
-  // derived traps
-  seal: function(target) {
-    var success = this.preventExtensions(target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      var props = this.getOwnPropertyNames(target);
-      var l = +props.length;
-      for (var i = 0; i < l; i++) {
-        var name = props[i];
-        success = success &&
-          this.defineProperty(target,name,{configurable:false});
-      }
-    }
-    return success;
-  },
-  freeze: function(target) {
-    var success = this.preventExtensions(target);
-    success = !!success; // coerce to Boolean
-    if (success) {
-      var props = this.getOwnPropertyNames(target);
-      var l = +props.length;
-      for (var i = 0; i < l; i++) {
-        var name = props[i];
-        var desc = this.getOwnPropertyDescriptor(target,name);
-        desc = normalizeAndCompletePropertyDescriptor(desc);
-        if (isDataDescriptor(desc)) {
-          success = success &&
-            this.defineProperty(target,name,{writable:false,
-                                             configurable:false});
-        } else if (desc !== undefined) {
-          success = success &&
-            this.defineProperty(target,name,{configurable:false});
-        }
-      }
-    }
-    return success;
-  },
-  isSealed: function(target) {
-    var props = this.getOwnPropertyNames(target);
-    var l = +props.length;
-    for (var i = 0; i < l; i++) {
-      var name = props[i];
-      var desc = this.getOwnPropertyDescriptor(target,name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc.configurable) {
-        return false;
-      }
-    }
-    return !this.isExtensible(target);
-  },
-  isFrozen: function(target) {
-    var props = this.getOwnPropertyNames(target);
-    var l = +props.length;
-    for (var i = 0; i < l; i++) {
-      var name = props[i];
-      var desc = this.getOwnPropertyDescriptor(target,name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (isDataDescriptor(desc)) {
-        if (desc.writable) {
-          return false;
-        }
-      }
-      if (desc.configurable) {
-        return false;
-      }
-    }
-    return !this.isExtensible(target);
-  },
-  has: function(target, name) {
-    var desc = this.getOwnPropertyDescriptor(target, name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    if (desc !== undefined) {
-      return true;
-    }
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      return false;
-    }
-    return Reflect.has(proto, name);
-  },
-  hasOwn: function(target,name) {
-    var desc = this.getOwnPropertyDescriptor(target,name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    return desc !== undefined;
-  },
-  get: function(target, name, receiver) {
-    receiver = receiver || target;
-
-    var desc = this.getOwnPropertyDescriptor(target, name);
-    desc = normalizeAndCompletePropertyDescriptor(desc);
-    if (desc === undefined) {
-      var proto = Object.getPrototypeOf(target);
-      if (proto === null) {
-        return undefined;
-      }
-      return Reflect.get(proto, name, receiver);
-    }
-    if (isDataDescriptor(desc)) {
-      return desc.value;
-    }
-    var getter = desc.get;
-    if (getter === undefined) {
-      return undefined;
-    }
-    return desc.get.call(receiver);
-  },
-  set: function(target, name, value, receiver) {
-    // No need to set receiver = receiver || target;
-    // in a trap invocation, receiver should already be set
-
-    // first, check whether target has a non-writable property
-    // shadowing name on receiver, via the fundamental
-    // getOwnPropertyDescriptor trap
-    var ownDesc = this.getOwnPropertyDescriptor(target, name);
-    ownDesc = normalizeAndCompletePropertyDescriptor(ownDesc);
-
-    if (ownDesc !== undefined) {
-      if (isAccessorDescriptor(ownDesc)) {
-        var setter = ownDesc.set;
-        if (setter === undefined) return false;
-        setter.call(receiver, value); // assumes Function.prototype.call
-        return true;
-      }
-      // otherwise, isDataDescriptor(ownDesc) must be true
-      if (ownDesc.writable === false) return false;
-      if (receiver === target) {
-        var updateDesc =
-          { value: value,
-            // FIXME: it should not be necessary to describe the following
-            // attributes. Added to circumvent a bug in tracemonkey:
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=601329
-            writable:     ownDesc.writable,
-            enumerable:   ownDesc.enumerable,
-            configurable: ownDesc.configurable };
-        Object.defineProperty(receiver, name, updateDesc);
-        return true;
-      } else {
-        if (!Object.isExtensible(receiver)) return false;
-        var newDesc =
-          { value: value,
-            writable: true,
-            enumerable: true,
-            configurable: true };
-        Object.defineProperty(receiver, name, newDesc);
-        return true;
-      }
-    }
-
-    // name is not defined in target, search target's prototype
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      // target was the last prototype, now we know that 'name' is not shadowed
-      // by an existing (accessor or data) property, so we can add the property
-      // to the initial receiver object
-      if (!Object.isExtensible(receiver)) return false;
-      var newDesc =
-        { value: value,
-          writable: true,
-          enumerable: true,
-          configurable: true };
-      Object.defineProperty(receiver, name, newDesc);
-      return true;
-    }
-    // continue the search in target's prototype
-    return Reflect.set(proto, name, value, receiver);
-  },
-  enumerate: function(target) {
-    var trapResult = this.getOwnPropertyNames(target);
-    var l = +trapResult.length;
-    var result = [];
-    for (var i = 0; i < l; i++) {
-      var name = String(trapResult[i]);
-      var desc = this.getOwnPropertyDescriptor(name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc !== undefined && desc.enumerable) {
-        result.push(name);
-      }
-    }
-    var proto = Object.getPrototypeOf(target);
-    if (proto === null) {
-      return result;
-    }
-    var inherited = Reflect.enumerate(proto);
-    // FIXME: filter duplicates
-    return result.concat(inherited);
-  },
-  iterate: function(target) {
-    var trapResult = this.enumerate(target);
-    var l = +trapResult.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) {
-          throw StopIteration;
-        } else {
-          return trapResult[idx++];
-        }
-      }
-    };
-  },
-  keys: function(target) {
-    var trapResult = this.getOwnPropertyNames(target);
-    var l = +trapResult.length;
-    var result = [];
-    for (var i = 0; i < l; i++) {
-      var name = String(trapResult[i]);
-      var desc = this.getOwnPropertyDescriptor(name);
-      desc = normalizeAndCompletePropertyDescriptor(desc);
-      if (desc !== undefined && desc.enumerable) {
-        result.push(name);
-      }
-    }
-    return result;
-  },
-  ownKeys: function(target) {
-    var trapResult = Object(this.getOwnPropertyNames(target));
-    var l = +trapResult.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) throw StopIteration;
-        return trapResult[idx++];
-      }
-    };
-  },
-  construct: function(target, args) {
-    var proto = this.get(target, 'prototype', target);
-    var instance;
-    if (Object(proto) === proto) {
-      instance = Object.create(proto);
-    } else {
-      instance = {};
-    }
-    var res = this.apply(target, instance, args);
-    if (Object(res) === res) {
-      return res;
-    }
-    return instance;
-  }
-};
-
 var revokedHandler = Proxy.create({
   get: function() { throw new TypeError("proxy is revoked"); }
 });
@@ -2245,7 +1964,7 @@ if (typeof Proxy !== "undefined") {
   var primCreate = Proxy.create,
       primCreateFunction = Proxy.createFunction;
 
-  Reflect.Proxy = function(target, handler) {
+  global.Proxy = function(target, handler) {
     // check that target is an Object
     if (Object(target) !== target) {
       throw new TypeError("Proxy target must be an Object, given "+target);
@@ -2276,8 +1995,8 @@ if (typeof Proxy !== "undefined") {
     return proxy;
   };
 
-  Reflect.Proxy.revocable = function(target, handler) {
-    var proxy = Reflect.Proxy(target, handler);
+  global.Proxy.revocable = function(target, handler) {
+    var proxy = new Proxy(target, handler);
     var revoke = function() {
       var vHandler = directProxies.get(proxy);
       if (vHandler !== null) {
@@ -2292,19 +2011,10 @@ if (typeof Proxy !== "undefined") {
 } else {
   // Proxy global not defined, so proxies are not supported
 
-  Reflect.Proxy = function(_target, _handler) {
+  global.Proxy = function(_target, _handler) {
     throw new Error("proxies not supported on this platform");
   }
 
-}
-
-// override the old global Proxy object
-// with the new Proxy object exported by this library
-global.Proxy = Reflect.Proxy;
-
-// to support iteration protocol in non-spidermonkey environments:
-if (typeof StopIteration === "undefined") {
-  global.StopIteration = Object.freeze({});
 }
 
 // for node.js modules, export every property in the Reflect object
@@ -2315,7 +2025,4 @@ if (typeof exports !== 'undefined') {
   });
 }
 
-}(typeof exports !== 'undefined' ? global : this, function(target, name) {
-  // non-strict delete, will never throw
-  return delete target[name];
-})); // function-as-module pattern
+}(typeof exports !== 'undefined' ? global : this)); // function-as-module pattern

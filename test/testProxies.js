@@ -78,6 +78,34 @@ load('../reflect.js');
       // re.test(e.message) && re.test(message), "assertThrows: "+e.message);
     }
   }
+  
+  // returns an ES6-compatible iterator for an array
+  function createArrayIterator(array) {
+    var l = +array.length;
+    var idx = 0;
+    return {
+      next: function() {
+        if (idx === l) return { done: true };
+        return { done: false, value: array[idx++] };
+      }
+    };
+  }
+
+  // exhausts an ES6-compatible iterator and stores all
+  // enumerated values in an array
+  function drainToArray(iterator) {
+    var props = [];
+    var nxt = iterator.next();
+    while (!nxt.done) {
+      props.push(nxt.value);
+      nxt = iterator.next();
+    }
+    if (nxt.value !== undefined) {
+      props.push(nxt.value);
+    }
+    return props; 
+  }
+
 
   // the 'main' function
   global.test = function test() {
@@ -143,16 +171,6 @@ load('../reflect.js');
         emulatedProps[name] = desc;
         return success[name];
       },
-      freeze: function(target) {
-        Object.defineProperties(target, emulatedProps);
-        Object.freeze(target);
-        return true;
-      },
-      seal: function(target) {
-        Object.defineProperties(target, emulatedProps);
-        Object.seal(target);
-        return true;
-      },
       preventExtensions: function(target) {
         Object.defineProperties(target, emulatedProps);
         Object.preventExtensions(target);
@@ -177,16 +195,15 @@ load('../reflect.js');
       has: function(target, name) {
         return !!emulatedProps[name];
       },
-      hasOwn: function(target, name) {
-        return !!emulatedProps[name];
-      },
-      keys: function(target) {
-        return Object.keys(emulatedProps);
+      ownKeys: function(target) {
+        return Reflect.ownKeys(emulatedProps);
       },
       enumerate: function(target) {
-        return Object.getOwnPropertyNames(emulatedProps).filter(function (name) {
-          return emulatedProps[name].enumerable;
-        });
+        var props =
+          Object.getOwnPropertyNames(emulatedProps).filter(function (name) {
+            return emulatedProps[name].enumerable;
+          });
+        return createArrayIterator(props);
       }
     };
     return Proxy(target, handler);
@@ -344,8 +361,8 @@ load('../reflect.js');
       assert(result.value === 1 && result.configurable === false,
              'x was observed as non-configurable');
       delete emulatedProps.x;
-      assertThrows("cannot report existing non-configurable own property "+
-                   "'x' as a non-existent own property",
+      assertThrows("cannot report non-configurable property 'x'"+
+                   " as non-existent",    
         function() {
           Object.prototype.hasOwnProperty.call(brokenProxy, 'x');
         });
@@ -411,6 +428,8 @@ load('../reflect.js');
         });
     };
 
+  /* Object.keys can list new properties (based on [[OwnPropertyKeys]]
+     rather than [[GetOwnPropertyNames]])
   TESTS.testKeysCannotListNewProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
       emulatedProps.x = {value:1, enumerable:true, configurable:false};
@@ -422,6 +441,7 @@ load('../reflect.js');
           Object.keys(brokenProxy);
         });
     };
+  */
 
   TESTS.testGOPNMustListNonConfigurableProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
@@ -461,6 +481,8 @@ load('../reflect.js');
         "ok to drop non-configurable non-enumerable props in enumerate trap");
     };
 
+  /* Object.keys has no invariants anymore (based on [[OwnPropertyKeys]]
+     rather than [[GetOwnPropertyNames]])
   TESTS.testKeysMustListNonConfigurableEnumerableProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
       emulatedProps.x = {value:1, enumerable:true, configurable:false};
@@ -473,6 +495,7 @@ load('../reflect.js');
           Object.keys(brokenProxy);
         });
     };
+  */
 
   TESTS.testKeysMaySkipNonConfigurableNonEnumerableProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
@@ -656,7 +679,7 @@ load('../reflect.js');
         return true;
       },
       enumerate: function(tgt) {
-        return ['baz'];
+        return createArrayIterator(['baz']);
       }
     });
     child = Object.create(proxy);

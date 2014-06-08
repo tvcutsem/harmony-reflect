@@ -1,19 +1,20 @@
 # Proxy Handler API
 
-  * [get](#gettarget_name_receiver)
-  * [set](#settarget_name_value_receiver)
-  * [has](#hastarget_name)
-  * [apply](#applytarget_receiver_args)
-  * [construct](#constructtarget_args)
-  * [getOwnPropertyDescriptor](#getownpropertydescriptortarget_name)
-  * [defineProperty](#definepropertytarget_name_desc)
-  * [getPrototypeOf](#getprototypeoftarget)
-  * [setPrototypeOf](#setprototypeoftarget_newproto)
-  * [deleteProperty](#deletepropertytarget_name)
-  * [enumerate](#enumeratetarget)
-  * [preventExtensions](#preventextensionstarget)
-  * [isExtensible](#isextensibletarget)
-  * [ownKeys](#ownkeystarget)
+  * [get(target, name, receiver)](#gettarget_name_receiver)
+  * [set(target, name, value, receiver)](#settarget_name_value_receiver)
+  * [has(target, name)](#hastarget_name)
+  * [apply(target, receiver, args)](#applytarget_receiver_args)
+  * [construct(target, args)](#constructtarget_args)
+  * [getOwnPropertyDescriptor(target, name)](#getownpropertydescriptortarget_name)
+  * [defineProperty(target, name, desc)](#definepropertytarget_name_desc)
+  * [getOwnPropertyNames(target)](#getownpropertynamestarget)
+  * [getPrototypeOf(target)](#getprototypeoftarget)
+  * [setPrototypeOf(target, newProto)](#setprototypeoftarget_newproto)
+  * [deleteProperty(target, name)](#deletepropertytarget_name)
+  * [enumerate(target)](#enumeratetarget)
+  * [preventExtensions(target)](#preventextensionstarget)
+  * [isExtensible(target)](#isextensibletarget)
+  * [ownKeys(target)](#ownkeystarget)
 
 This API documents all the functions that a proxy handler object may implement to trap operations on a proxy object. These functions are also knowns as *traps*. All of these functions correspond one-to-one to a function with the same name and signature in the [Reflect API](api.md). If a trap wants to perform the "default behavior" for an intercepted operation, it can simply call that corresponding function from the handler API.
 
@@ -163,7 +164,24 @@ The proxy throws a TypeError if:
 
   *  This trap returns `true` while `Object.defineProperty(target, name, desc)` would throw. One cannot successfully define incompatible descriptors.
   * This trap returns `true`, `desc` is non-configurable and `target` has no `name` property. A non-configurable property can only be defined successfully if the `target` object has a corresponding property.
-  
+
+## getOwnPropertyNames(target)
+
+Called when the proxy is queried for all of its own (i.e. not inherited) property names.
+This trap should return an array of strings.
+
+This trap intercepts the following operations:
+
+  *  `Object.getOwnPropertyNames(proxy)`
+  *  `Reflect.getOwnPropertyNames(proxy)`
+
+The proxy throws a TypeError if:
+
+  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
+  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
+
+In ES6, the intercepted operations instead trigger the `ownKeys` trap.
+
 ## getPrototypeOf(target)
 
 Called when the proxy is queried for its prototype link.
@@ -213,7 +231,7 @@ This trap intercepts the following operations:
 ## enumerate(target)
 
 Called when the proxy is queried for its enumerable own and inherited properties.
-This trap should return an array of strings.
+This trap should return an iterator of strings.
 
 This trap intercepts the following operations:
 
@@ -262,127 +280,3 @@ Note: in ES6, this trap will also be triggered for the following operations:
   * `Object.assign(target, proxy)`
   * `Object.getOwnPropertyNames(proxy)`
   * `Object.getOwnPropertySymbols(proxy)`
-
-# Deprecated traps
-
-The trap functions defined below were at one point part of the official ES6 API but have since been
-deprecated. This library continues to implement them for the sake of backwards-compatibility.
-
-## hasOwn(target, name)
-
-Called when the proxy is queried for an own property named `name`.
-This trap should return a boolean indicating whether the proxy has an own (not inherited) property called `name`.
-
-This trap intercepts the following operations:
-
-  *  `Object.prototype.hasOwnProperty.call(proxy, name)`
-  *  `Reflect.hasOwn(proxy,name)`
-
-## getOwnPropertyNames(target)
-
-Called when the proxy is queried for all of its own (i.e. not inherited) property names.
-This trap should return an array of strings.
-
-This trap intercepts the following operations:
-
-  *  `Object.getOwnPropertyNames(proxy)`
-  *  `Reflect.getOwnPropertyNames(proxy)`
-
-The proxy throws a TypeError if:
-
-  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
-  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
-
-In ES6, the intercepted operations instead trigger the `ownKeys` trap.
-
-## keys(target)
-
-Called when the proxy is queried for its own enumerable property names.
-This trap should return an array of strings.
-
-This trap intercepts the following operations:
-
-  *  `Object.keys(proxy)`
-  *  `Reflect.keys(proxy)`
-
-In ES6, the intercepted operations instead trigger the `ownKeys` trap.
-
-## freeze(target)
-
-Called when an attempt is made to freeze the proxy object.
-This trap should return a boolean indicating whether the proxy was successfully frozen.
-
-This trap intercepts the following operations:
-
-  *  `Object.freeze(proxy)`
-  *  `Reflect.freeze(proxy)`
-
-In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor`, `defineProperty` and `preventExtensions` traps.
-
-## seal(target)
-
-Called when an attempt is made to seal the proxy object.
-This trap should return a boolean indicating whether the proxy was successfully sealed.
-
-This trap intercepts the following operations:
-
-  *  `Object.seal(proxy)`
-  *  `Reflect.seal(proxy)`
-
-In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor`, `defineProperty` and `preventExtensions` traps.
-
-## isFrozen(target)
-
-Called when the proxy is queried for its frozen state.
-This trap should return a boolean indicating whether the proxy is frozen.
-
-This trap intercepts the following operations:
-
-  *  `Object.isFrozen(proxy)`
-  *  `Reflect.isFrozen(proxy)`
-
-This trap throws a TypeError if:
-
-  * The return value does not correspond to the frozen state of the proxy's target object.
-
-In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor` and `isExtensible` traps.
-
-## isSealed(target)
-
-Called when the proxy is queried for its sealed state.
-This trap should return a boolean indicating whether the proxy is sealed.
-
-This trap intercepts the following operations:
-
-  *  `Object.isSealed(proxy)`
-  *  `Reflect.isSealed(proxy)`
-
-This trap throws a TypeError if:
-
-  * The return value does not correspond to the sealed state of the proxy's target object.
-
-In ES6, the intercepted operations instead trigger the `ownKeys`, `getOwnPropertyDescriptor` and `isExtensible` traps.
-
-## iterate(target)
-
-Called when the proxy's properties are iterated over using a `for-of` loop.
-This trap should return an iterator, which is an object with a `next()` method.
-
-This trap intercepts the following operations:
-
-  *  `for (var elem of proxy) {...}`. The `for-of` loop is new in ECMAScript 6. See the [MDN docs](https://developer.mozilla.org/en/JavaScript/Reference/Statements/for...of).
-  *  `Reflect.iterate(proxy)`
-
-[Iterators](https://developer.mozilla.org/en/JavaScript/Guide/Iterators_and_Generators) are also new in ES6 and iterate over the elements as if by executing:
-
-    var iterator = handler.iterator(target);
-    try {
-      while (true) {
-        var elem = iterator.next();
-        ...
-      }
-    } catch (e) {
-      if (e !== StopIteration) throw e;
-    }
-
-However, in ES6 one would usually use the new `for-of` loop to exhaust an iterator.
