@@ -1,18 +1,18 @@
 # Reflect API
 
-  * [new Proxy(target, handler)](#newproxytarget_handler)
-  * [Proxy.revocable(target, handler)](#proxyrevocabletarget_handler)
-  * [Reflect.get(target, name, [receiver])](#reflectgettarget_name_receiver)
-  * [Reflect.set(target, name, value, [receiver])](#reflectsettarget_name_value_receiver)
-  * [Reflect.has(target, name)](#reflecthastarget_name)
-  * [Reflect.apply(target, receiver, [args])](#reflectapplytarget_receiver_args)
-  * [Reflect.construct(target, args)](#reflectconstructtarget_args)
-  * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget_name)
-  * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget_name_desc)
+  * [new Proxy(target, handler)](#newproxytarget-handler)
+  * [Proxy.revocable(target, handler)](#proxyrevocabletarget-handler)
+  * [Reflect.get(target, name, [receiver])](#reflectgettarget-name-receiver)
+  * [Reflect.set(target, name, value, [receiver])](#reflectsettarget-name-value-receiver)
+  * [Reflect.has(target, name)](#reflecthastarget-name)
+  * [Reflect.apply(target, receiver, args)](#reflectapplytarget-receiver-args)
+  * [Reflect.construct(target, args)](#reflectconstructtarget-args)
+  * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget-name)
+  * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget-name-desc)
   * [Reflect.getOwnPropertyNames(target)](#reflectgetownpropertynamestarget)
   * [Reflect.getPrototypeOf(target)](#reflectgetprototypeoftarget)
-  * [Reflect.setPrototypeOf(target, newProto)](#reflectsetprototypeoftarget_newproto)
-  * [Reflect.deleteProperty(target, name)](#reflectdeletepropertytarget_name)
+  * [Reflect.setPrototypeOf(target, newProto)](#reflectsetprototypeoftarget-newproto)
+  * [Reflect.deleteProperty(target, name)](#reflectdeletepropertytarget-name)
   * [Reflect.enumerate(target)](#reflectenumeratetarget)
   * [Reflect.preventExtensions(target)](#reflectpreventextensionstarget)
   * [Reflect.isExtensible(target)](#reflectisextensibletarget)
@@ -76,7 +76,7 @@ If `target` is a proxy, calls that proxy's `has` trap.
 
 `name` must be a string.
 
-## Reflect.apply(target, receiver, [args])
+## Reflect.apply(target, receiver, args)
 
 Calls the `target` function with its `this`-value bound to `receiver` and with actual arguments as specified by the `args` array. Returns whatever the `target` function returns.
 
