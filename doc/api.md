@@ -1,6 +1,6 @@
 # Reflect API
 
-  * [new Proxy(target, handler)](#newproxytarget-handler)
+  * [new Proxy(target, handler)](#new-proxytarget-handler)
   * [Proxy.revocable(target, handler)](#proxyrevocabletarget-handler)
   * [Reflect.get(target, name, [receiver])](#reflectgettarget-name-receiver)
   * [Reflect.set(target, name, value, [receiver])](#reflectsettarget-name-value-receiver)
