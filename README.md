@@ -17,12 +17,12 @@ If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org
 Then:
 
     node --harmony
-    > require('harmony-reflect');
+    > var Reflect = require('harmony-reflect');
 
 API Docs
 ========
 
-This module exports a single object named `Reflect`.
+This module exports a single object named [Reflect](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md).
 
 The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects.
 
