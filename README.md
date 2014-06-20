@@ -1,3 +1,5 @@
+[![NPM version](https://badge.fury.io/js/harmony-reflect.svg)](http://badge.fury.io/js/harmony-reflect) [![Dependencies](https://david-dm.org/tvcutsem/harmony-reflect.png)](https://david-dm.org/tvcutsem/harmony-reflect)
+
 This is a shim for the ECMAScript 6 [Reflect](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object) and [Proxy](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects) objects.
 
 In a browser, after loading
