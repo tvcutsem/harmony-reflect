@@ -1,14 +1,15 @@
 {
   "name": "harmony-reflect",
   "version": "1.0.0",
-  "description": "ES5 Shim for proposed ECMAScript 6 reflection API",
+  "description": "ES5 shim for ES6 (ECMAScript 6) Reflect and Proxy objects",
   "main": "reflect.js",
   "keywords": [
     "reflection",
     "proxies",
     "proxy",
     "reflect",
-    "harmony"
+    "harmony",
+    "es6"
   ],
   "homepage": "https://github.com/tvcutsem/harmony-reflect",
   "repository" : {

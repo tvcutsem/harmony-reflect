@@ -1,12 +1,12 @@
-This is a shim for the ECMAScript 6 [reflection module](http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api).
+This is a shim for the ECMAScript 6 [Reflect](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object) and [Proxy](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects) objects.
 
 In a browser, after loading
 
     <script src="reflect.js"></script>
 
-a global object `Reflect` is defined that contains the functions from the [ES6](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object) `reflect` module (see below).
+a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object).
 
-The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-factory-function). To create such a proxy, call:
+The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects). To create such a proxy, call:
 
     var proxy = new Proxy(target, handler)
 
@@ -22,7 +22,7 @@ Then:
 API Docs
 ========
 
-This module exports a single object named [Reflect](https://github.com/tvcutsem/harmony-reflect/tree/master/doc/api.md).
+This module exports an object named `Reflect` and updates the global `Proxy` object to be compatible with the latest ECMAScript 6 spec.
 
 The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects.
 
@@ -38,9 +38,12 @@ The `Reflect` API, with support for proxies, was tested on:
   * Firefox (>= v4.0)
   * Chrome (>= v19), with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
   * `node --harmony` (>= v0.7.8)
+
+You can also run the code in one of the following headless JavaScript shells:
+
   * `v8 --harmony` (>= v3.6)
-  * spidermonkey shell
-  
+  * Any recent `js` spidermonkey shell
+
 Dependencies
 ============
 
@@ -94,8 +97,7 @@ This library differs from the draft ECMAScript 6 spec. as follows:
 
   * In ES6, `Proxy` will be a constructor function that will _require_ the use
     of `new`. That is, you must write `new Proxy(target, handler)`. This library
-    exports `Proxy` as an ordinary function which may be called without using
-    the `new` operator.
+    exports `Proxy` as an ordinary function which may be called with or without using the `new` operator.
   * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work
     transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`).
     The current ES6 draft spec does not treat proxies-for-arrays as genuine
