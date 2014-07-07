@@ -1954,15 +1954,15 @@ var Reflect = global.Reflect = {
   }
 };
 
-var revokedHandler = Proxy.create({
-  get: function() { throw new TypeError("proxy is revoked"); }
-});
-
 // feature-test whether the Proxy global exists
 if (typeof Proxy !== "undefined") {
 
   var primCreate = Proxy.create,
       primCreateFunction = Proxy.createFunction;
+
+  var revokedHandler = primCreate({
+    get: function() { throw new TypeError("proxy is revoked"); }
+  });
 
   global.Proxy = function(target, handler) {
     // check that target is an Object
