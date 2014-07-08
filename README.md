@@ -8,7 +8,7 @@ In a browser, after loading
 
 a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object).
 
-The `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects). To create such a proxy, call:
+If your browser supports the "harmony-era" `Proxy` object that predates ES6 (i.e. Firefox or Chrome), that `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects). To create such a proxy, call:
 
     var proxy = new Proxy(target, handler)
 
@@ -24,7 +24,7 @@ Then:
 API Docs
 ========
 
-This module exports an object named `Reflect` and updates the global `Proxy` object to be compatible with the latest ECMAScript 6 spec.
+This module exports an object named `Reflect` and updates the global `Proxy` object (if it exists) to be compatible with the latest ECMAScript 6 spec.
 
 The ECMAScript 6 Proxy API allows one to intercept various operations on Javascript objects.
 
@@ -83,6 +83,7 @@ Other example uses of proxies (not done by me, but using this library):
 
   * supporting [negative array indices](https://github.com/sindresorhus/negative-array) a la Python
   * [tpyo](https://github.com/mathiasbynens/tpyo): using proxies to correct typo's in JS property names
+  * [persistent objects](http://tagtree.tv/es6-proxies): shows how one might go about using proxies to save updates to objects in a database incrementally
 
 Proxy Handler API
 =================
