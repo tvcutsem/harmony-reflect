@@ -483,6 +483,9 @@ function setIntegrityLevel(target, level) {
       }
     }
   }
+  if (pendingException !== undefined) {
+    throw pendingException;
+  }
   return Reflect.preventExtensions(target);
 }
 
