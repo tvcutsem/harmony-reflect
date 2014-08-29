@@ -177,9 +177,3 @@ If `target` is a proxy, calls that proxy's `ownKeys` trap.
 Note: in ES6, this method returns an array containing strings _or symbols_, rather than just strings. Symbols are a new feature in ES6 that this library does not attempt to emulate.
 As a result, for this shim, this method returns the same result as `Object.getOwnPropertyNames(target)`, which only ever
 returns strings, never symbols (even in ES6).
-
-## Reflect.getOwnPropertyNames(target)
-
-
-Same as the ES5 built-in Object.getOwnPropertyNames(target).
-If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
