@@ -1,5 +1,7 @@
-v1.0.1
+v1.1.0
 ======
+
+Release date: august 29th, 2014
 
 Improved compliance with August 24, 2014 (Rev 27) ECMAScript 6th edition draft standard.
 
