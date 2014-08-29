@@ -351,6 +351,7 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
     prim_defineProperty =           Object.defineProperty,
     prim_keys =                     Object.keys,
+    prim_getOwnPropertyNames =      Object.getOwnPropertyNames,
     prim_isArray =                  Array.isArray,
     prim_concat =                   Array.prototype.concat,
     prim_isPrototypeOf =            Object.prototype.isPrototypeOf,
@@ -359,7 +360,11 @@ var prim_preventExtensions =        Object.preventExtensions,
 // these will point to the patched versions of the respective methods on
 // Object. They are used within this module as the "intrinsic" bindings
 // of these methods (i.e. the "original" bindings as defined in the spec)
-var Object_isFrozen, Object_isSealed, Object_isExtensible, Object_getPrototypeOf;
+var Object_isFrozen,
+    Object_isSealed,
+    Object_isExtensible,
+    Object_getPrototypeOf,
+    Object_getOwnPropertyNames;
 
 /**
  * A property 'name' is fixed if it is an own property of the target.
@@ -440,11 +445,9 @@ function isCompatibleDescriptor(extensible, current, desc) {
 }
 
 // ES6 7.3.11 SetIntegrityLevel
-//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
-//    Reflect.ownKeys (as ownKeys does no invariant checking)
 // level is one of "sealed" or "frozen"
 function setIntegrityLevel(target, level) {
-  var ownProps = Object.getOwnPropertyNames(target);
+  var ownProps = Object_getOwnPropertyNames(target);
   var pendingException = undefined;
   if (level === "sealed") {
     var l = +ownProps.length;
@@ -490,14 +493,12 @@ function setIntegrityLevel(target, level) {
 }
 
 // ES6 7.3.12 TestIntegrityLevel
-//  - based on draft May 22, but using Object.getOwnPropertyNames rather than
-//    Reflect.ownKeys (as ownKeys does no invariant checking)
 // level is one of "sealed" or "frozen"
 function testIntegrityLevel(target, level) {
   var isExtensible = Object_isExtensible(target);
   if (isExtensible) return false;
   
-  var ownProps = Object.getOwnPropertyNames(target);
+  var ownProps = Object_getOwnPropertyNames(target);
   var pendingException = undefined;
   var configurable = false;
   var writable = false;
@@ -828,6 +829,15 @@ Validator.prototype = {
   },
 
   /**
+   * The getOwnPropertyNames trap was replaced by the ownKeys trap,
+   * which now also returns an array (of strings or symbols) and
+   * which performs the same rigorous invariant checks as getOwnPropertyNames
+   */
+  getOwnPropertyNames: function() {
+    throw new TypeError("getOwnPropertyNames trap is deprecated");
+  },
+
+  /**
    * Checks whether the trap result does not contain any new properties
    * if the proxy is non-extensible.
    *
@@ -839,14 +849,16 @@ Validator.prototype = {
    * Additionally, the trap result is normalized.
    * Instead of returning the trap result directly:
    *  - create and return a fresh Array,
-   *  - of which each element is coerced to String,
-   *  - which does not contain duplicates.
+   *  - of which each element is coerced to a String
+   *
+   * This trap is called a.o. by Reflect.ownKeys, Object.getOwnPropertyNames
+   * and Object.keys (the latter filters out only the enumerable own properties).
    */
-  getOwnPropertyNames: function() {
-    var trap = this.getTrap("getOwnPropertyNames");
+  ownKeys: function() {
+    var trap = this.getTrap("ownKeys");
     if (trap === undefined) {
       // default forwarding behavior
-      return Reflect.getOwnPropertyNames(this.target);
+      return Reflect.ownKeys(this.target);
     }
 
     var trapResult = trap.call(this.handler, this.target);
@@ -858,13 +870,9 @@ Validator.prototype = {
 
     for (var i = 0; i < numProps; i++) {
       var s = String(trapResult[i]);
-      if (propNames[s]) {
-        throw new TypeError("getOwnPropertyNames cannot list a "+
-                            "duplicate property '"+s+"'");
-      }
       if (!Object.isExtensible(this.target) && !isFixed(s, this.target)) {
         // non-extensible proxies don't tolerate new own property names
-        throw new TypeError("getOwnPropertyNames cannot list a new "+
+        throw new TypeError("ownKeys trap cannot list a new "+
                             "property '"+s+"' on a non-extensible object");
       }
 
@@ -872,12 +880,12 @@ Validator.prototype = {
       result[i] = s;
     }
 
-    var ownProps = Object.getOwnPropertyNames(this.target);
+    var ownProps = Object_getOwnPropertyNames(this.target);
     var target = this.target;
     ownProps.forEach(function (ownProp) {
       if (!propNames[ownProp]) {
         if (isSealed(ownProp, target)) {
-          throw new TypeError("getOwnPropertyNames trap failed to include "+
+          throw new TypeError("ownKeys trap failed to include "+
                               "non-configurable property '"+ownProp+"'");
         }
         if (!Object.isExtensible(target) &&
@@ -887,8 +895,8 @@ Validator.prototype = {
             // existent. Once a property has been reported as non-existent
             // on a non-extensible object, it should forever be reported as
             // non-existent
-            throw new TypeError("cannot report existing own property '"+ownProp+
-                                "' as non-existent on a non-extensible object");
+            throw new TypeError("ownKeys trap cannot report existing own property '"+
+                                ownProp+"' as non-existent on a non-extensible object");
         }
       }
     });
@@ -1284,32 +1292,6 @@ Validator.prototype = {
   */
   
   /**
-   * This trap is called a.o. by Object.keys, which filters out only
-   * the enumerable own properties.
-   *
-   * The trap should return an iterator. The proxy implementation only
-   * checks whether the return value is an object.
-   */
-  ownKeys: function() {
-    var trap = this.getTrap("ownKeys");
-    if (trap === undefined) {
-      // default forwarding behavior
-      return Reflect.ownKeys(this.target);
-    }
-
-    var trapResult = trap.call(this.handler, this.target);
-
-    if (trapResult === null ||
-        trapResult === undefined ||
-        typeof trapResult !== "object") {
-      throw new TypeError("ownKeys should return an iterator object, got " +
-                          trapResult);
-    }
-
-    return trapResult;
-  },
-
-  /**
    * New trap that reifies [[Call]].
    * If the target is a function, then a call to
    *   proxy(...args)
@@ -1451,20 +1433,27 @@ Object.defineProperty = function(subject, name, desc) {
 Object.keys = function(subject) {
   var vHandler = directProxies.get(subject);
   if (vHandler !== undefined) {
-    var ownKeysIterator = vHandler.ownKeys();
-    var nxt = ownKeysIterator.next();
+    var ownKeys = vHandler.ownKeys();
     var result = [];
-    while (!nxt.done) {
-      var k = String(nxt.value);
+    for (var i = 0; i < ownKeys.length; i++) {
+      var k = String(ownKeys[i]);
       var desc = Object.getOwnPropertyDescriptor(subject, k);
       if (desc !== undefined && desc.enumerable === true) {
         result.push(k);
       }
-      nxt = ownKeysIterator.next();
     }
     return result;
   } else {
     return prim_keys(subject);
+  }
+}
+
+Object.getOwnPropertyNames = Object_getOwnPropertyNames = function(subject) {
+  var vHandler = directProxies.get(subject);
+  if (vHandler !== undefined) {
+    return vHandler.ownKeys();
+  } else {
+    return prim_getOwnPropertyNames(subject);
   }
 }
 
@@ -1653,9 +1642,6 @@ Object.prototype.hasOwnProperty = function(name) {
 var Reflect = global.Reflect = {
   getOwnPropertyDescriptor: function(target, name) {
     return Object.getOwnPropertyDescriptor(target, name);
-  },
-  getOwnPropertyNames: function(target) {
-    return Object.getOwnPropertyNames(target);
   },
   defineProperty: function(target, name, desc) {
 
@@ -1897,11 +1883,6 @@ var Reflect = global.Reflect = {
     var fun = Reflect.get(target, name, receiver);
     return Function.prototype.apply.call(fun, receiver, args);
   },*/
-  /*enumerate: function(target) {
-    var result = [];
-    for (var name in target) { result.push(name); };
-    return result;
-  },*/
   enumerate: function(target) {
     var handler = directProxies.get(target);
     if (handler !== undefined) {
@@ -1922,20 +1903,7 @@ var Reflect = global.Reflect = {
   // imperfect ownKeys implementation: in ES6, should also include
   // symbol-keyed properties.
   ownKeys: function(target) {
-    var handler = directProxies.get(target);
-    if (handler !== undefined) {
-      return handler.ownKeys();
-    }
-
-    var result = Reflect.getOwnPropertyNames(target);
-    var l = +result.length;
-    var idx = 0;
-    return {
-      next: function() {
-        if (idx === l) { return { done: true } };
-        return { done: false, value: result[idx++] };
-      }
-    };
+    return Object_getOwnPropertyNames(target);
   },
   apply: function(target, receiver, args) {
     // target.apply(receiver, args)

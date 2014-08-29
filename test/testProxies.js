@@ -180,8 +180,8 @@ load('../reflect.js');
         delete emulatedProps[name];
         return success[name];
       },
-      getOwnPropertyNames: function(target) {
-        return Object.keys(emulatedProps);
+      ownKeys: function(target) {
+        return Object.getOwnPropertyNames(emulatedProps);
       },
       get: function(target, name, receiver) {
         var desc = emulatedProps[name];
@@ -194,9 +194,6 @@ load('../reflect.js');
       },
       has: function(target, name) {
         return !!emulatedProps[name];
-      },
-      ownKeys: function(target) {
-        return Reflect.ownKeys(emulatedProps);
       },
       enumerate: function(target) {
         var props =
@@ -345,7 +342,7 @@ load('../reflect.js');
       emulatedProps.x = {value:1, configurable:false};
       Object.preventExtensions(brokenProxy);
       emulatedProps.y = {value:2, configurable:true};
-      assertThrows("getOwnPropertyNames cannot list a new property "+
+      assertThrows("ownKeys trap cannot list a new property "+
                    "'y' on a non-extensible object",
         function() {
           Object.getOwnPropertyNames(brokenProxy);
@@ -428,20 +425,17 @@ load('../reflect.js');
         });
     };
 
-  /* Object.keys can list new properties (based on [[OwnPropertyKeys]]
-     rather than [[GetOwnPropertyNames]])
   TESTS.testKeysCannotListNewProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
       emulatedProps.x = {value:1, enumerable:true, configurable:false};
       Object.preventExtensions(brokenProxy);
       emulatedProps.y = {value:2, enumerable:true, configurable:true};
-      assertThrows("keys trap cannot list a new property "+
+      assertThrows("ownKeys trap cannot list a new property "+
                    "'y' on a non-extensible object",
         function() {
           Object.keys(brokenProxy);
         });
     };
-  */
 
   TESTS.testGOPNMustListNonConfigurableProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
@@ -449,7 +443,7 @@ load('../reflect.js');
       emulatedProps.y = {value:2, enumerable:true, configurable:true};
       Object.preventExtensions(brokenProxy);
       delete emulatedProps.x;
-      assertThrows("getOwnPropertyNames trap failed to include "+
+      assertThrows("ownKeys trap failed to include "+
                    "non-configurable property 'x'",
         function() {
           Object.getOwnPropertyNames(brokenProxy);
@@ -481,31 +475,17 @@ load('../reflect.js');
         "ok to drop non-configurable non-enumerable props in enumerate trap");
     };
 
-  /* Object.keys has no invariants anymore (based on [[OwnPropertyKeys]]
-     rather than [[GetOwnPropertyNames]])
   TESTS.testKeysMustListNonConfigurableEnumerableProperties =
     function(brokenProxy, emulatedProps, emulatedProto, success) {
       emulatedProps.x = {value:1, enumerable:true, configurable:false};
       emulatedProps.y = {value:2, enumerable:true, configurable:true};
       Object.preventExtensions(brokenProxy);
       delete emulatedProps.x;
-      assertThrows("keys trap failed to include "+
-                   "non-configurable enumerable property 'x'",
+      assertThrows("ownKeys trap failed to include "+
+                   "non-configurable property 'x'",
         function() {
           Object.keys(brokenProxy);
         });
-    };
-  */
-
-  TESTS.testKeysMaySkipNonConfigurableNonEnumerableProperties =
-    function(brokenProxy, emulatedProps, emulatedProto, success) {
-      emulatedProps.x = {value:1, enumerable:false, configurable:false};
-      emulatedProps.y = {value:2, enumerable:true, configurable:false};
-      Object.preventExtensions(brokenProxy);
-      delete emulatedProps.x;
-      var res = Object.keys(brokenProxy);
-      assert(res.length === 1,
-        "ok to drop non-configurable non-enumerable props in keys trap");
     };
 
   /**
@@ -705,11 +685,11 @@ load('../reflect.js');
       construct: function(tgt, args) {
         assert(tgt === fun, 'construct: target is correct');
         assert(args.length === 3, 'construct: args is correct');
-        return 'construct';
+        return {'construct': true};
       }
     });
     assert(proxy(1,2,3) === 'apply', 'calling apply');
-    assert(new proxy(1,2,3) === 'construct', 'calling construct');
+    assert(new proxy(1,2,3).construct === true, 'calling construct');
   }
 
   function testSet() {

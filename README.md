@@ -64,6 +64,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.prototype.hasOwnProperty
     Object.getOwnPropertyDescriptor
     Object.defineProperty
+    Object.getOwnPropertyNames
     Function.prototype.toString
     Date.prototype.toString
     Array.isArray
@@ -96,7 +97,7 @@ handlers must implement.
 Spec Compatibility
 ==================
 
-This library differs from the draft ECMAScript 6 spec. as follows:
+This library differs from the rev 27 (august 2014) draft ECMAScript 6 spec as follows:
 
   * In ES6, `Proxy` will be a constructor function that will _require_ the use
     of `new`. That is, you must write `new Proxy(target, handler)`. This library

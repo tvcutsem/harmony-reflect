@@ -9,7 +9,6 @@
   * [Reflect.construct(target, args)](#reflectconstructtarget-args)
   * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget-name)
   * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget-name-desc)
-  * [Reflect.getOwnPropertyNames(target)](#reflectgetownpropertynamestarget)
   * [Reflect.getPrototypeOf(target)](#reflectgetprototypeoftarget)
   * [Reflect.setPrototypeOf(target, newProto)](#reflectsetprototypeoftarget-newproto)
   * [Reflect.deleteProperty(target, name)](#reflectdeletepropertytarget-name)
@@ -114,13 +113,6 @@ If `target` is a proxy, calls that proxy's `defineProperty` trap.
 
 `name` must be a string and `desc` must be a valid property descriptor object.
 
-## Reflect.getOwnPropertyNames(target)
-
-Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property names.
-
-Same as the ES5 built-in Object.getOwnPropertyNames(target).
-If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.
-
 ## Reflect.getPrototypeOf(target)
 
 Returns the prototype link of the `target` object.
@@ -178,8 +170,16 @@ If `target` is a proxy, calls that proxy's `isExtensible` trap.
 
 ## Reflect.ownKeys(target)
 
-Returns an iterator that produces all of the string-keyed own property names of `target`.
+Returns an array of strings representing the `target` object's "own" (i.e. not inherited) property keys.
 
 If `target` is a proxy, calls that proxy's `ownKeys` trap.
 
-Note: in ES6, this method returns an iterator producing strings _or symbols_, rather than just strings. Symbols are a new feature in ES6 that this library does not attempt to emulate. In this library, the method behaves just like the ES5 built-in `Object.keys(target)`, except that it returns an iterator rather than an array.
+Note: in ES6, this method returns an array containing strings _or symbols_, rather than just strings. Symbols are a new feature in ES6 that this library does not attempt to emulate.
+As a result, for this shim, this method returns the same result as `Object.getOwnPropertyNames(target)`, which only ever
+returns strings, never symbols (even in ES6).
+
+## Reflect.getOwnPropertyNames(target)
+
+
+Same as the ES5 built-in Object.getOwnPropertyNames(target).
+If `target` is a proxy, calls that proxy's `getOwnPropertyNames` trap.

@@ -127,7 +127,7 @@ while (!$nxt.done) {
   <tr>
     <td>getOwnPropertyNames</td>
     <td>Object.getOwnPropertyNames(proxy)</td>
-    <td>handler.getOwnPropertyNames(target)</td>
+    <td>handler.ownKeys(target)</td>
   </tr>
   <tr>
     <td>getOwnPropertyDescriptor (9)</td>
@@ -160,11 +160,8 @@ while (!$nxt.done) {
     <td>handler.setPrototypeOf(target, newProto)</td>
   </tr>
   <tr>
-    <td colspan="3">New ES6 operations</td>
-  </tr>
-  <tr>
-    <td>ownKeys</td>
-    <td>Reflect.ownKeys(proxy)</td>
+    <td>keys (12)</td>
+    <td>Object.keys(proxy)</td>
     <td>handler.ownKeys(target)</td>
   </tr>
 </table>
@@ -181,3 +178,4 @@ while (!$nxt.done) {
   * (9): the return value of the `getOwnPropertyDescriptor` trap (the property descriptor object) is not the original value returned from the intercepted `Object.getOwnPropertyDescriptor` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
   * (10): the third argument to the `defineProperty` trap (the property descriptor object) is not the original value passed into the intercepted `Object.defineProperty` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
   * (11): only on platforms that support mutable `__proto__` and where `__proto__` is an accessor property defined on `Object.prototype`.
+  * (12): the `ownKeys` trap must return all own property names. `Object.keys` then retains only the keys denoting enumerable properties.

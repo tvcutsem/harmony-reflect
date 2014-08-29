@@ -1,3 +1,16 @@
+v1.0.1
+======
+
+Improved compliance with August 24, 2014 (Rev 27) ECMAScript 6th edition draft standard.
+
+  * Removed `Reflect.getOwnPropertyNames` and the `getOwnPropertyNames` proxy trap.
+    Use `Reflect.ownKeys` and the `ownKeys` trap instead.
+  * `Reflect.ownKeys` now returns an array of strings (rather than an ES6 iterator)
+  * `ownKeys` trap now checks various invariants previously checked by the
+    `getOwnPropertyNames` trap.
+  * `Object.keys(proxy)` now triggers `ownKeys` trap, which checks invariants, so the result
+    of `Object.keys(proxy)` is again reliable.
+  
 v1.0.0
 ======
 

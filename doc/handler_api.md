@@ -7,7 +7,6 @@
   * [construct(target, args)](#constructtarget-args)
   * [getOwnPropertyDescriptor(target, name)](#getownpropertydescriptortarget-name)
   * [defineProperty(target, name, desc)](#definepropertytarget-name-desc)
-  * [getOwnPropertyNames(target)](#getownpropertynamestarget)
   * [getPrototypeOf(target)](#getprototypeoftarget)
   * [setPrototypeOf(target, newProto)](#setprototypeoftarget-newproto)
   * [deleteProperty(target, name)](#deletepropertytarget-name)
@@ -48,7 +47,12 @@ This trap intercepts the following operations:
   *  `proxy[name]`
   *  `Object.create(proxy)[name]` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `get` trap may be triggered. In this case, `receiver` is bound to the child object.)
   *  `Reflect.get(proxy,name,receiver)`
+  
+The proxy throws a TypeError if:
 
+  * `name` is a non-configurable, non-writable own data property of the target and this trap does not return the exact same value as the property's current value (such properties cannot change value)
+  * `name` is a non-configurable own accessor property of the target whose `get:` attribute is `undefined` and this trap does not return `undefined` (such properties should always have a value of `undefined`)
+  
 ## set(target, name, value, receiver)
 
 Called when the proxy's `name` property is assigned to `value`. `receiver` denotes the `this`-binding for the setter function, in case `name` is an accessor property.
@@ -63,6 +67,11 @@ This trap intercepts the following operations:
   *  `Object.create(proxy)[name] = value` (i.e. if a proxy is used as a prototype, and the child does not override the property, the proxy's `set` trap may be triggered. In this case, `receiver` is bound to the child object.)
   *  `Reflect.set(proxy,name,value,receiver)`
 
+The proxy throws a TypeError if:
+
+  * The trap returns `true` and `name` is a non-configurable, non-writable own data property of the target and `value` is not the same value as the current property's value (updating such a property should always fail)
+  * The trap returns `true` and `name` is a non-configurable own accessor property of the target whose `set:` attribute is `undefined` (updating such a property should always fail)
+  
 ## has(target, name)
 
 Called when the proxy is queried for an own or inherited property named `name`.
@@ -74,11 +83,17 @@ This trap intercepts the following operations:
   *  `name in Object.create(proxy)` (i.e. if a proxy is used as a prototype, its `has` trap is triggered if any of its child objects do not have the property)
   *  `Reflect.has(proxy,name)`
 
+The proxy throws a TypeError if:
+
+  * The trap returns `false` and `name` was previously observed to be a non-configurable own property of the proxy (non-configurable own properties cannot be hidden)
+
 ## apply(target, receiver, args)
 
 Called when the proxy is applied as a function with `receiver` as its `this`-binding and `args` as the array of actual arguments. This trap can return anything.
 
 This trap is "active" _only_ if `typeof target === "function"`. That is, if the target object is not callable, then calling the proxy will throw a TypeError rather than calling the trap.
+
+This trap may return any value.
 
 `receiver` may be bound to the proxy object itself, so be careful when you touch the object inside the trap: this can easily lead to infinite recursion.
 
@@ -92,7 +107,8 @@ This trap intercepts the following operations:
 ## construct(target, args)
 
 Called when a proxy is treated as a constructor function to create a new instance object.
-This trap can return anything.
+
+This trap should return an Object.
 
 This trap is "active" _only_ if `typeof target === "function"`. That is, if the target object is not callable, then calling `new` on a proxy will throw a TypeError rather than calling this trap.
 
@@ -162,25 +178,8 @@ This trap intercepts the following operations:
 
 The proxy throws a TypeError if:
 
-  *  This trap returns `true` while `Object.defineProperty(target, name, desc)` would throw. One cannot successfully define incompatible descriptors.
+  * This trap returns `true` while `Object.defineProperty(target, name, desc)` would throw. One cannot successfully define incompatible descriptors.
   * This trap returns `true`, `desc` is non-configurable and `target` has no `name` property. A non-configurable property can only be defined successfully if the `target` object has a corresponding property.
-
-## getOwnPropertyNames(target)
-
-Called when the proxy is queried for all of its own (i.e. not inherited) property names.
-This trap should return an array of strings.
-
-This trap intercepts the following operations:
-
-  *  `Object.getOwnPropertyNames(proxy)`
-  *  `Reflect.getOwnPropertyNames(proxy)`
-
-The proxy throws a TypeError if:
-
-  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
-  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
-
-In ES6, the intercepted operations instead trigger the `ownKeys` trap.
 
 ## getPrototypeOf(target)
 
@@ -219,6 +218,7 @@ The proxy throws a TypeError if:
 ## deleteProperty(target, name)
 
 Called when a property is deleted on the proxy.
+
 This trap should return a boolean that indicates whether or not the deletion was successful.
 
 `name` is a string.
@@ -227,6 +227,10 @@ This trap intercepts the following operations:
 
   *  `delete proxy[name]`
   *  `Reflect.deleteProperty(proxy, name)`
+  
+The proxy throws a TypeError if:
+
+  * `name` was previously observed to be a non-configurable own data property and the trap returns true (non-configurable properties cannot successfully be deleted)
 
 ## enumerate(target)
 
@@ -252,6 +256,7 @@ This trap intercepts the following operations:
 ## isExtensible(target)
 
 Called when the proxy is queried for its extensibility state.
+
 This trap should return a boolean indicating whether the proxy is extensible.
 
 This trap intercepts the following operations:
@@ -259,24 +264,32 @@ This trap intercepts the following operations:
   *  `Object.isExtensible(proxy)`
   *  `Reflect.isExtensible(proxy)`
   
-This trap throws a TypeError if:
+The proxy throws a TypeError if:
 
   * The return value does not correspond to the extensibility state of the proxy's target object.
 
 ## ownKeys(target)
 
-Called when the proxy is queried for its own keys.
-This trap should return an iterator that produces all of the string-keyed own property names of the proxy.
+Called when the proxy is queried for all of its own (i.e. not inherited) property names.
+
+This trap should return an array of strings.
 
 This trap intercepts the following operations:
 
-  *  `Reflect.ownKeys(proxy)`
-
-Note: in ES6, this trap will also be triggered for the following operations:
-  
+  * `Reflect.ownKeys(proxy)`
+  * `Object.getOwnPropertyNames(proxy)`  
   * `Object.keys(proxy)`
   * `Object.seal(proxy)` and `Object.freeze(proxy)`
   * `Object.isSealed(proxy)` and `Object.isFrozen(proxy)`
+
+Note: in ES6, this trap will also be triggered for the following operations which are not supported by this shim:
+
   * `Object.assign(target, proxy)`
-  * `Object.getOwnPropertyNames(proxy)`
   * `Object.getOwnPropertySymbols(proxy)`
+
+In ES6, this trap can return an array of strings or _symbols_. This ES5 shim does not attempt to support symbols.
+
+The proxy throws a TypeError if:
+
+  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
+  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.

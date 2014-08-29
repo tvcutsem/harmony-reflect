@@ -100,19 +100,19 @@ function test() {
            'defineProperty update failure');
   }());
 
-  // getOwnPropertyNames(target : object) -> array[string]
+  // ownKeys(target : object) -> array[string]
   (function(){
     var target = Object.create(Object.prototype, {
       x: { value:1, enumerable: true  },
       y: { value:2, enumerable: false },
       z: { get: function(){}, enumerable: true }
     });
-    var result = Reflect.getOwnPropertyNames(target);
+    var result = Reflect.ownKeys(target);
     assert(result.length === 3 &&
            result.indexOf('x') !== -1 &&
            result.indexOf('y') !== -1 &&
            result.indexOf('z') !== -1,
-           'getOwnPropertyNames success');
+           'ownKeys success');
   }());
   
   // deleteProperty(target : object, name : string) -> bool
@@ -161,23 +161,6 @@ function test() {
     assert(Reflect.has(target, 'x') === true, 'has proto ok');
     assert(Reflect.has(target, 'y') === true, 'has own ok');
     assert(Reflect.has(target, 'z') === false, 'has failure');
-  }());
-  
-  // ownKeys(target : object) -> iterator
-  (function(){
-    var target = Object.create(Object.prototype, {
-      x: { value:1, enumerable: true  },
-      y: { value:2, enumerable: false },
-    });
-    var iterator = Reflect.ownKeys(target);
-    var result = [];
-    var nxt = iterator.next();
-    while (!nxt.done) {
-      result.push(nxt.value);
-      nxt = iterator.next();
-    }
-    assert(result.length === 2,
-           'ownKeys success');
   }());
   
   // get(target : object, name : string, receiver : object?) -> any
