@@ -2,6 +2,11 @@
 
 This is a shim for the ECMAScript 6 [Reflect](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object) and [Proxy](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects) objects.
 
+Read [Why should I use this library?](https://github.com/tvcutsem/harmony-reflect/wiki)
+
+Installation
+============
+
 In a browser, after loading
 
     <script src="reflect.js"></script>
