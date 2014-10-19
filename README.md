@@ -46,6 +46,9 @@ The `Reflect` API, with support for proxies, was tested on:
   * Chrome (>= v19), with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
   * `node --harmony` (>= v0.7.8)
 
+Note: Chrome v38 seems to have [removed](https://code.google.com/p/v8/issues/detail?id=1543#c44)
+the `Proxy` constructor. As a result, this library cannot patch proxies on Chrome v38.
+
 You can also run the code in one of the following headless JavaScript shells:
 
   * `v8 --harmony` (>= v3.6)
