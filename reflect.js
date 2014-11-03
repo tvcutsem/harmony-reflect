@@ -1354,10 +1354,12 @@ Object.preventExtensions = function(subject) {
   }
 };
 Object.seal = function(subject) {
-  return setIntegrityLevel(subject, "sealed");
+  setIntegrityLevel(subject, "sealed");
+  return subject;
 };
 Object.freeze = function(subject) {
-  return setIntegrityLevel(subject, "frozen");
+  setIntegrityLevel(subject, "frozen");
+  return subject;
 };
 Object.isExtensible = Object_isExtensible = function(subject) {
   var vHandler = directProxies.get(subject);

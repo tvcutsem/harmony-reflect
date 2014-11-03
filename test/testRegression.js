@@ -178,6 +178,13 @@ function test() {
     assert(proto.age === 2, 'age on prototype updated');
   }());
   
+  (function () {
+    var obj = {};
+    assert(Object.freeze(obj) === obj, 'freeze returns obj');
+    var obj2 = {};
+    assert(Object.seal(obj2) === obj2, 'seal returns obj');
+  }());
+  
 }
 
 if (typeof window === "undefined") {
