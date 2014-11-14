@@ -274,6 +274,7 @@ Called when the proxy is queried for all of its own (i.e. not inherited) propert
 
 This trap should return an array of strings.
 
+<<<<<<< Updated upstream
 This trap intercepts the following operations:
 
   * `Reflect.ownKeys(proxy)`
@@ -291,5 +292,14 @@ In ES6, this trap can return an array of strings or _symbols_. This ES5 shim doe
 
 The proxy throws a TypeError if:
 
-  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties.
-  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties.
+  *  The `target` has a non-configurable property that is not listed in the result. Proxies cannot hide non-configurable properties, so the result array must contain the keys of all non-configurable own properties of the target object.
+  
+  *  The result contains new property names that do not appear in `target` and  `Object.isExtensible(target)` is false. If the target is non-extensible, a proxy cannot report new non-existent properties, that is, the result array must contain all the keys of the own properties of the target object and no other values. 
+
+ES6 Compatibility Note: in ES6, this trap will also be triggered for the following operations:
+  
+  * `Object.assign(target, proxy)`
+  * `Object.getOwnPropertySymbols(proxy)`
+  
+Also, in ES6, the trap can return an array of strings or symbols
+(this library does not support symbols).
