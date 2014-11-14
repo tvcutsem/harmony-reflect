@@ -274,7 +274,6 @@ Called when the proxy is queried for all of its own (i.e. not inherited) propert
 
 This trap should return an array of strings.
 
-<<<<<<< Updated upstream
 This trap intercepts the following operations:
 
   * `Reflect.ownKeys(proxy)`
