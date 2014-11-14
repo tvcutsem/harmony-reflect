@@ -1129,8 +1129,8 @@ Validator.prototype = {
    *
    * The trap should return an iterator.
    *
-   * We convert the iterator to an array as current implementations expect
-   * enumerate to still return an array of strings.
+   * However, as implementations of pre-direct proxies still expect enumerate
+   * to return an array of strings, we convert the iterator into an array.
    */
   enumerate: function() {
     var trap = this.getTrap("enumerate");
@@ -1887,12 +1887,16 @@ var Reflect = global.Reflect = {
   },*/
   enumerate: function(target) {
     var handler = directProxies.get(target);
+    var result;
     if (handler !== undefined) {
-      return handler.enumerate(handler.target);
+      // handler.enumerate should return an iterator directly, but the
+      // iterator gets converted to an array for backward-compat reasons,
+      // so we must re-iterate over the array
+      result = handler.enumerate(handler.target);
+    } else {
+      result = [];
+      for (var name in target) { result.push(name); };      
     }
-
-    var result = [];
-    for (var name in target) { result.push(name); };
     var l = +result.length;
     var idx = 0;
     return {

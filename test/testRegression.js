@@ -185,6 +185,25 @@ function test() {
     assert(Object.seal(obj2) === obj2, 'seal returns obj');
   }());
   
+  // see https://github.com/tvcutsem/harmony-reflect/issues/43
+  (function () {
+
+    function wrap(obj) {
+        return new Proxy(obj, {});
+    }
+    var proxy = wrap({a: 1, b: 2});
+    var result = [];
+    for (var prop in proxy) { result.push(prop) }
+    assert(JSON.stringify(result) === '["a","b"]',
+           'enumerate on proxy returns a,b');
+
+    result = [];
+    proxy = wrap(proxy);
+    for (var prop in proxy) { result.push(prop) }
+    assert(JSON.stringify(result) === '["a","b"]',
+           'enumerate on proxied proxy returns a,b');
+  }());
+  
 }
 
 if (typeof window === "undefined") {
