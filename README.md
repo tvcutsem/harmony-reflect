@@ -26,6 +26,8 @@ Then:
     node --harmony
     > var Reflect = require('harmony-reflect');
 
+See [release notes](https://github.com/tvcutsem/harmony-reflect/blob/master/RELNOTES.md) for changes to the npm releases.
+
 API Docs
 ========
 

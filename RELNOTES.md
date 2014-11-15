@@ -1,3 +1,13 @@
+v1.1.1
+======
+
+Release date: november 14th, 2014
+
+Minor bugfixes:
+
+  * `Reflect.enumerate(aProxy)` now works as intended (issue #43)
+  * Patched `Object.freeze(obj)` now returns `obj` rather than a boolean (issue #42)
+
 v1.1.0
 ======
 
