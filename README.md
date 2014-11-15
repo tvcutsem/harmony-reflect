@@ -107,12 +107,12 @@ handlers must implement.
 Spec Compatibility
 ==================
 
-This library differs from the rev 27 (august 2014) draft ECMAScript 6 spec as follows:
+This library differs from the [rev 27 (august 2014) draft ECMAScript 6 spec](http://wiki.ecmascript.org/doku.php?id=harmony:specification_drafts#august_24_2014_draft_rev_27) as follows:
 
   * In ES6, `Proxy` will be a constructor function that will _require_ the use
     of `new`. That is, you must write `new Proxy(target, handler)`. This library
     exports `Proxy` as an ordinary function which may be called with or without using the `new` operator.
   * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work
     transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`).
-    The current ES6 draft spec does not treat proxies-for-arrays as genuine
-    arrays for these operations.
+    The current ES6 draft spec [does not treat proxies-for-arrays as genuine
+    arrays for these operations](https://esdiscuss.org/topic/array-isarray-new-proxy-should-be-false-bug-1096753).
