@@ -98,6 +98,8 @@ Other example uses of proxies (not done by me, but using this library):
   * [tpyo](https://github.com/mathiasbynens/tpyo): using proxies to correct typo's in JS property names
   * [persistent objects](http://tagtree.tv/es6-proxies): shows how one might go about using proxies to save updates to objects in a database incrementally
 
+For more examples of proxies, and a good overview of their design rationale, I recommend reading [Axel Rauschmayer's blog post on proxies](http://www.2ality.com/2014/12/es6-proxies.html).
+
 Proxy Handler API
 =================
 
@@ -117,4 +119,4 @@ This library differs from the [rev 27 (august 2014) draft ECMAScript 6 spec](htt
   * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work
     transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`).
     The current ES6 draft spec [does not treat proxies-for-arrays as genuine
-    arrays for these operations](https://esdiscuss.org/topic/array-isarray-new-proxy-should-be-false-bug-1096753).
+    arrays for these operations](https://esdiscuss.org/topic/array-isarray-new-proxy-should-be-false-bug-1096753). Update (Nov. 2014): it looks like the ES6 spec will change so that `Array.isArray` and other methods that test for arrayness will work transparently on proxies, so this shim's behavior will become the standardized behavior.
