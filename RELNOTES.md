@@ -1,3 +1,12 @@
+v1.1.2
+======
+
+Release date: march 13th, 2015
+
+Minor bugfix:
+
+  * `delete` now works on a proxy for a proxy (issue #46)
+
 v1.1.1
 ======
 
