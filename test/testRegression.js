@@ -204,6 +204,24 @@ function test() {
            'enumerate on proxied proxy returns a,b');
   }());
   
+  // see https://github.com/tvcutsem/harmony-reflect/issues/46
+  (function () {
+
+    var handler = {
+        deleteProperty: function(target,name) {
+          return Reflect.deleteProperty(target,name);
+        }
+    };
+
+    var o = {x: 1, y: 2};
+    var inner = new Proxy(o, handler);
+    var outer = new Proxy(inner, handler);
+
+    delete outer.x;
+    assert(outer.x === undefined,
+          'delete on a proxy of a proxy');
+  }());
+  
 }
 
 if (typeof window === "undefined") {

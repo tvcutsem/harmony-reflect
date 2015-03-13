@@ -1714,7 +1714,7 @@ var Reflect = global.Reflect = {
   deleteProperty: function(target, name) {
     var handler = directProxies.get(target);
     if (handler !== undefined) {
-      return handler.deleteProperty(target, name);
+      return handler.delete(name);
     }
     
     var desc = Object.getOwnPropertyDescriptor(target, name);
