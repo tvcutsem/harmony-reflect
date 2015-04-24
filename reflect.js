@@ -2002,4 +2002,5 @@ if (typeof exports !== 'undefined') {
   });
 }
 
-}(typeof exports !== 'undefined' ? global : this)); // function-as-module pattern
+// function-as-module pattern
+}(typeof exports !== 'undefined' ? global : this));
