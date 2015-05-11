@@ -7,16 +7,6 @@ Read [Why should I use this library?](https://github.com/tvcutsem/harmony-reflec
 Installation
 ============
 
-In a browser, after loading
-
-    <script src="reflect.js"></script>
-
-a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object).
-
-If your browser supports the "harmony-era" `Proxy` object that predates ES6 (i.e. Firefox or Chrome), that `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects). To create such a proxy, call:
-
-    var proxy = new Proxy(target, handler)
-
 If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org):
 
     npm install harmony-reflect
@@ -27,6 +17,16 @@ Then:
     > var Reflect = require('harmony-reflect');
 
 See [release notes](https://github.com/tvcutsem/harmony-reflect/blob/master/RELNOTES.md) for changes to the npm releases.
+
+To use in a browser, just download the single reflect.js file. After loading
+
+    <script src="reflect.js"></script>
+
+a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object).
+
+If your browser supports the "harmony-era" `Proxy` object that predates ES6 (i.e. Firefox or Chrome <= v37), that `Proxy` object is also updated to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects). To create such a proxy, call:
+
+    var proxy = new Proxy(target, handler)
 
 API Docs
 ========
