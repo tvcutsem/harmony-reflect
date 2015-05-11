@@ -78,7 +78,7 @@ while (!$nxt.done) {
   <tr>
     <td>function construct</td>
     <td>new proxy(...args)</td>
-    <td>handler.construct(target, args)</td>
+    <td>handler.construct(target, args, proxy)</td>
   </tr>
   <tr>
     <td>method call (4)</td>

@@ -315,6 +315,19 @@ function test() {
       });
   }());
   
+  // [[Construct]] newTarget
+  (function() {
+    var Super = function() { };
+    var Sub = function() { };
+    var instance = Reflect.construct(Super, [], Sub);
+    assert(Object.getPrototypeOf(instance) === Sub.prototype,
+           "instance prototype === newTarget");
+           
+    var instance2 = Reflect.construct(Super, []);
+    assert(Object.getPrototypeOf(instance2) === Super.prototype,
+          "newTarget defaults to target");
+  }());
+  
 }
 
 if (typeof window === "undefined") {

@@ -4,7 +4,7 @@
   * [set(target, name, value, receiver)](#settarget-name-value-receiver)
   * [has(target, name)](#hastarget-name)
   * [apply(target, receiver, args)](#applytarget-receiver-args)
-  * [construct(target, args)](#constructtarget-args)
+  * [construct(target, args, newTarget)](#constructtarget-args-newTarget)
   * [getOwnPropertyDescriptor(target, name)](#getownpropertydescriptortarget-name)
   * [defineProperty(target, name, desc)](#definepropertytarget-name-desc)
   * [getPrototypeOf(target)](#getprototypeoftarget)
@@ -104,7 +104,7 @@ This trap intercepts the following operations:
   * `Function.prototype.call.call(proxy, receiver, ...args)`
   * `Reflect.apply(proxy,receiver,args)`
 
-## construct(target, args)
+## construct(target, args, newTarget)
 
 Called when a proxy is treated as a constructor function to create a new instance object.
 
@@ -112,10 +112,13 @@ This trap should return an Object.
 
 This trap is "active" _only_ if `typeof target === "function"`. That is, if the target object is not callable, then calling `new` on a proxy will throw a TypeError rather than calling this trap.
 
+`newTarget` indicates the constructor whose `.prototype` property should be used
+as the parent object of the to-be-created instance object.
+
 This trap intercepts the following operations:
 
   *  `new proxy(...args)`
-  *  `Reflect.construct(proxy,args)`
+  *  `Reflect.construct(proxy,args,newTarget)`
 
 ## getOwnPropertyDescriptor(target, name)
 

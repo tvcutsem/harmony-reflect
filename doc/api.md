@@ -6,7 +6,7 @@
   * [Reflect.set(target, name, value, [receiver])](#reflectsettarget-name-value-receiver)
   * [Reflect.has(target, name)](#reflecthastarget-name)
   * [Reflect.apply(target, receiver, args)](#reflectapplytarget-receiver-args)
-  * [Reflect.construct(target, args)](#reflectconstructtarget-args)
+  * [Reflect.construct(target, args, [newTarget])](#reflectconstructtarget-args-newTarget)
   * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget-name)
   * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget-name-desc)
   * [Reflect.getPrototypeOf(target)](#reflectgetprototypeoftarget)
@@ -86,14 +86,19 @@ If `target` is a proxy, calls that proxy's `apply` trap.
 
 In non-strict code, if `receiver` is `null` or `undefined`, the `this`-value will be set to the global object instead.
 
-## Reflect.construct(target, args)
+## Reflect.construct(target, args, [newTarget])
 
 Equivalent to calling `new target(...args)`, i.e. constructing a function with a variable number of arguments. Returns the value of the constructor, or the instance itself if the constructor returns a non-object value.
 
 If `target` is a proxy, calls that proxy's `construct` trap.
 
+`newTarget` defaults to `target`. If provided, `newTarget` is the constructor
+whose `.prototype` property will be used as the parent object for the newly
+created instance (the `this` value inside the constructor body). `newTarget` exists so that ES6 superclass constructors can create an instance whose prototype is initialized to a subclass.
+
 `target` must be a function (i.e. `typeof target === "function"`).
 `args` must be an array.
+`newTarget` must be a function.
 
 ## Reflect.getOwnPropertyDescriptor(target, name)
 

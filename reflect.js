@@ -1316,17 +1316,24 @@ Validator.prototype = {
    *   new proxy(...args)
    * Triggers this trap
    */
-  construct: function(target, args) {
+  construct: function(target, args, newTarget) {
     var trap = this.getTrap("construct");
     if (trap === undefined) {
-      return Reflect.construct(target, args);
+      return Reflect.construct(target, args, newTarget);
     }
 
-    if (typeof this.target === "function") {
-      return trap.call(this.handler, target, args);
-    } else {
+    if (typeof target !== "function") {
       throw new TypeError("new: "+ target + " is not a function");
     }
+
+    if (newTarget === undefined) {
+      newTarget = target;
+    } else {
+      if (typeof newTarget !== "function") {
+        throw new TypeError("new: "+ newTarget + " is not a function");
+      }      
+    }
+    return trap.call(this.handler, target, args, newTarget);
   }
 };
 
@@ -1915,16 +1922,27 @@ var Reflect = global.Reflect = {
     // target.apply(receiver, args)
     return Function.prototype.apply.call(target, receiver, args);
   },
-  construct: function(target, args) {
+  construct: function(target, args, newTarget) {
     // return new target(...args);
 
     // if target is a proxy, invoke its "construct" trap
     var handler = directProxies.get(target);
     if (handler !== undefined) {
-      return handler.construct(handler.target, args);
+      return handler.construct(handler.target, args, newTarget);
+    }
+    
+    if (typeof target !== "function") {
+      throw new TypeError("target is not a function: " + target);
+    }
+    if (newTarget === undefined) {
+      newTarget = target;
+    } else {
+      if (typeof newTarget !== "function") {
+        throw new TypeError("newTarget is not a function: " + target);
+      }      
     }
 
-    var proto = target.prototype;
+    var proto = newTarget.prototype;
     var instance = (Object(proto) === proto) ? Object.create(proto) : {};
     var result = Function.prototype.apply.call(target, instance, args);
     return Object(result) === result ? result : instance;

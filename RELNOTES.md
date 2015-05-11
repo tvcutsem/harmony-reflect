@@ -1,3 +1,8 @@
+v1.2.0
+======
+
+  * `Reflect.construct` now takes third optional `newTarget` parameter, as per ES6 draft April 3, 2015.
+
 v1.1.2
 ======
 
