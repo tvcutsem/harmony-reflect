@@ -533,6 +533,14 @@ function testIntegrityLevel(target, level) {
   return true;
 }
 
+function logOut(message, method) {
+  if (typeof console !== "undefined") {
+    if (typeof console[method] !== "undefined") {
+      console[method](message);
+    }
+  }
+}
+
 // ---- The Validator handler wrapper around user handlers ----
 
 /**
@@ -834,7 +842,10 @@ Validator.prototype = {
    * which performs the same rigorous invariant checks as getOwnPropertyNames
    */
   getOwnPropertyNames: function() {
-    throw new TypeError("getOwnPropertyNames trap is deprecated");
+    logOut("getOwnPropertyNames trap is deprecated", "warn");
+
+    var that = this;
+    return that.ownKeys.apply(that);
   },
 
   /**
