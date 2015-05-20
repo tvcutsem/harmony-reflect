@@ -1,3 +1,13 @@
+v1.2.1
+======
+
+Release date: may 20th, 2015
+
+Minor changes:
+
+  * Calling the unpatched, native `Object.getOwnPropertyNames` method on a proxy
+    now redirects to that proxy's `ownKeys` trap rather than failing with a TypeError. See issue #48.
+
 v1.2.0
 ======
 
