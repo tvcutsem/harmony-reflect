@@ -45,6 +45,8 @@ if(typeof require === 'function') {
   }
 }
 
+var native_getOwnPropertyNames = Object.getOwnPropertyNames;
+
 load('../reflect.js');
 
 (function(global){
@@ -127,6 +129,7 @@ load('../reflect.js');
       testSetPrototypeOf();
       testSetPrototypeOfUndefined();
       testUpdatePropertyDescriptor();
+      testDeprecatedGetOwnPropertyNames();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -839,6 +842,14 @@ load('../reflect.js');
     var descriptor = Object.getOwnPropertyDescriptor(obj, 'prop');
     assert(typeof descriptor.value === 'function',
            'testUpdatePropertyDescriptor: prop updated');
+  }
+  
+  // see https://github.com/tvcutsem/harmony-reflect/issues/48
+  function testDeprecatedGetOwnPropertyNames() {
+    var p = new Proxy({a:0}, {});
+    var ownProps = native_getOwnPropertyNames(p);
+    assert(ownProps.length === 1 && ownProps[0] === 'a',
+           'testDeprecatedGetOwnPropertyNames');
   }
 
   // invoke experiment

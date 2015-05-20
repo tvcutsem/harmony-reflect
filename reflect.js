@@ -832,9 +832,13 @@ Validator.prototype = {
    * The getOwnPropertyNames trap was replaced by the ownKeys trap,
    * which now also returns an array (of strings or symbols) and
    * which performs the same rigorous invariant checks as getOwnPropertyNames
+   *
+   * See issue #48 on how this trap can still get invoked by external libs
+   * that don't use the patched Object.getOwnPropertyNames function.
    */
   getOwnPropertyNames: function() {
-    throw new TypeError("getOwnPropertyNames trap is deprecated");
+    console.warn("getOwnPropertyNames trap is deprecated. Use ownKeys instead");
+    return this.ownKeys();
   },
 
   /**
