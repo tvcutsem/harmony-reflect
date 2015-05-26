@@ -350,6 +350,7 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_getPrototypeOf =           Object.getPrototypeOf,
     prim_getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
     prim_defineProperty =           Object.defineProperty,
+    prim_defineProperties =         Object.defineProperties,
     prim_keys =                     Object.keys,
     prim_getOwnPropertyNames =      Object.getOwnPropertyNames,
     prim_isArray =                  Array.isArray,
@@ -1440,6 +1441,24 @@ Object.defineProperty = function(subject, name, desc) {
     return success;
   } else {
     return prim_defineProperty(subject, name, desc);
+  }
+};
+
+Object.defineProperties = function(subject, descs) {
+  var vhandler = directProxies.get(subject);
+  if (vhandler !== undefined) {
+    var names = prim_getOwnPropertyNames(descs);
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i];
+      var normalizedDesc = normalizePropertyDescriptor(descs[name]);
+      var success = vhandler.defineProperty(name, normalizedDesc);
+      if (success === false) {
+        throw new TypeError("can't redefine property '"+name+"'");
+      }
+    }
+    return subject;
+  } else {
+    return prim_defineProperties(subject, descs);
   }
 };
 

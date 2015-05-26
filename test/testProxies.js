@@ -258,6 +258,16 @@ load('../reflect.js');
                                            {value:1,configurable:false}); });
     };
 
+  TESTS.testObjectDefineProperties =
+    function(brokenProxy, emulatedProps, emulatedProto, success, target) {
+      success.x = success.y = true;
+      var result = Object.defineProperties(brokenProxy, {
+        x: { value: 1, writable: true, enumerable: true, configurable: true },
+        y: { value: 2, writable: true, enumerable: true, configurable: true }
+      });
+      assert(emulatedProps.x.value === 1 && emulatedProps.y.value === 2, "defineProperties on proxy works");
+    };
+
   TESTS.testCantDefineConfigurableAsNonConfigurableProp =
     function(brokenProxy, emulatedProps, emulatedProto, success, target) {
       Object.defineProperty(target, 'x', {
