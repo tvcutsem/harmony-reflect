@@ -1437,7 +1437,7 @@ Object.defineProperty = function(subject, name, desc) {
     if (success === false) {
       throw new TypeError("can't redefine property '"+name+"'");
     }
-    return success;
+    return subject;
   } else {
     return prim_defineProperty(subject, name, desc);
   }
