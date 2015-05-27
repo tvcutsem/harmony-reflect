@@ -1447,7 +1447,7 @@ Object.defineProperty = function(subject, name, desc) {
 Object.defineProperties = function(subject, descs) {
   var vhandler = directProxies.get(subject);
   if (vhandler !== undefined) {
-    var names = prim_getOwnPropertyNames(descs);
+    var names = Object.keys(descs);
     for (var i = 0; i < names.length; i++) {
       var name = names[i];
       var normalizedDesc = normalizePropertyDescriptor(descs[name]);
