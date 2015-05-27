@@ -325,6 +325,18 @@ load('../reflect.js');
         });
     };
 
+  TESTS.testDefinePropertyReturnsProxy =
+    function(brokenProxy, emulatedProps, emulatedProto, success) {
+      success.x = true;
+      var result = Object.defineProperty(brokenProxy,'x',{
+        value: 2,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      assert(result === brokenProxy, 'patched defineProperty returns proxy');
+    };
+
   TESTS.testNonConfigurableNoDelete =
     function(brokenProxy, emulatedProps, emulatedProto, success, target) {
       emulatedProps.x = {value:1, configurable:false};
