@@ -1,3 +1,16 @@
+Master (to be v1.3.0)
+======
+
+Release date: TBD
+
+New features:
+
+  * `Object.defineProperties` is patched and will trigger the `defineProperty` trap when called on a proxy. See issue #51.
+
+Bugfixes:
+
+  * `Object.defineProperty(o,p,desc)` now returns `o` (as per ES5 spec) rather than a boolean success value.
+
 v1.2.1
 ======
 

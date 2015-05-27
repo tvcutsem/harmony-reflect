@@ -76,12 +76,18 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.prototype.hasOwnProperty
     Object.getOwnPropertyDescriptor
     Object.defineProperty
+    Object.defineProperties
     Object.getOwnPropertyNames
     Function.prototype.toString
     Date.prototype.toString
     Array.isArray
     Array.prototype.concat
     Proxy
+
+:warning: In node.js, when you `require('harmony-reflect')`, only the current
+module's globals are patched. If you pass an emulated direct proxy to an external module, and that module uses the unpatched globals, the module may not interact with the proxy according to the latest ES6 Proxy API, instead falling
+back on the old pre-ES6 Proxy API. This can cause bugs, e.g. the built-in `Array.isArray` will return `false` when passed a proxy-for-array, while the
+patched `Array.isArray` will return true. I know of no good fix to reliably patch the globals for all node modules. If you do, let me know.
 
 Examples
 ========

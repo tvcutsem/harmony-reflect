@@ -140,6 +140,11 @@ while (!$nxt.done) {
     <td>handler.defineProperty(target, 'foo', {value:42,writable:true,enumerable:true,configurable:true})</td>
   </tr>
   <tr>
+    <td>defineProperties (10)</td>
+    <td>Object.defineProperties(proxy, {foo: {value:42}})</td>
+    <td>handler.defineProperty(target, 'foo', {value:42,writable:true,enumerable:true,configurable:true})</td>
+  </tr>
+  <tr>
     <td>preventExtensions</td>
     <td>Object.preventExtensions(proxy)</td>
     <td>handler.preventExtensions(target)</td>
@@ -176,6 +181,6 @@ while (!$nxt.done) {
   * (7): assuming that `proxy.valueOf`, which triggers the proxy's "get" trap, returned `Object.prototype.valueOf`.
   * (8): assuming that `proxy.toString`, which triggers the proxy's "get" trap, returned `Object.prototype.toString`.
   * (9): the return value of the `getOwnPropertyDescriptor` trap (the property descriptor object) is not the original value returned from the intercepted `Object.getOwnPropertyDescriptor` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
-  * (10): the third argument to the `defineProperty` trap (the property descriptor object) is not the original value passed into the intercepted `Object.defineProperty` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes).
+  * (10): the third argument to the `defineProperty` trap (the property descriptor object) is not the original value passed into the intercepted `Object.defineProperty` call. Rather, it is a fresh descriptor object that is guaranteed to be "complete" (i.e. to define values for all relevant ECMAScript property attributes). For `Object.defineProperties(proxy,props)`, the proxy's `defineProperty` trap is called for each own enumerable property of `props`.
   * (11): only on platforms that support mutable `__proto__` and where `__proto__` is an accessor property defined on `Object.prototype`.
   * (12): the `ownKeys` trap must return all own property names. `Object.keys` then retains only the keys denoting enumerable properties.
