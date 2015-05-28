@@ -6,7 +6,7 @@
   * [Reflect.set(target, name, value, [receiver])](#reflectsettarget-name-value-receiver)
   * [Reflect.has(target, name)](#reflecthastarget-name)
   * [Reflect.apply(target, receiver, args)](#reflectapplytarget-receiver-args)
-  * [Reflect.construct(target, args, [newTarget])](#reflectconstructtarget-args-newTarget)
+  * [Reflect.construct(target, args, [newTarget])](#reflectconstructtarget-args-newtarget)
   * [Reflect.getOwnPropertyDescriptor(target, name)](#reflectgetownpropertydescriptortarget-name)
   * [Reflect.defineProperty(target, name, desc)](#reflectdefinepropertytarget-name-desc)
   * [Reflect.getPrototypeOf(target)](#reflectgetprototypeoftarget)
