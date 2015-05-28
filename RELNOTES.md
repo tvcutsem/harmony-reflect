@@ -1,7 +1,7 @@
-Master (to be v1.3.0)
+v1.3.0
 ======
 
-Release date: TBD
+Release date: May 28th, 2015
 
 New features:
 
@@ -14,7 +14,7 @@ Bugfixes:
 v1.2.1
 ======
 
-Release date: may 20th, 2015
+Release date: May 20th, 2015
 
 Minor changes:
 
@@ -24,7 +24,7 @@ Minor changes:
 v1.2.0
 ======
 
-Release date: may 11th, 2015
+Release date: May 11th, 2015
 
   * `Reflect.construct` now takes third optional `newTarget` parameter, as per ES6 draft April 3, 2015.
 
