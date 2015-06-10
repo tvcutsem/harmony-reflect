@@ -68,21 +68,24 @@ Dependencies
 
 After loading `reflect.js` into your page or other JS environment, be aware that the following globals are patched to be able to recognize emulated direct proxies:
 
-    Object.{freeze,seal,preventExtensions}
-    Object.{isFrozen,isSealed,isExtensible}
-    Object.getPrototypeOf
-    Object.keys
-    Object.prototype.valueOf
-    Object.prototype.hasOwnProperty
     Object.getOwnPropertyDescriptor
     Object.defineProperty
     Object.defineProperties
     Object.getOwnPropertyNames
+    Object.keys
+    Object.{get,set}PrototypeOf
+    Object.{freeze,seal,preventExtensions}
+    Object.{isFrozen,isSealed,isExtensible}
+    Object.prototype.valueOf
+    Object.prototype.isPrototypeOf
+    Object.prototype.toString
+    Object.prototype.hasOwnProperty
     Function.prototype.toString
     Date.prototype.toString
     Array.isArray
     Array.prototype.concat
     Proxy
+    Reflect
 
 :warning: In node.js, when you `require('harmony-reflect')`, only the current
 module's globals are patched. If you pass an emulated direct proxy to an external module, and that module uses the unpatched globals, the module may not interact with the proxy according to the latest ES6 Proxy API, instead falling

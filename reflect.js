@@ -62,15 +62,21 @@
  //  - Object.{freeze,seal,preventExtensions}
  //  - Object.{isFrozen,isSealed,isExtensible}
  //  - Object.getPrototypeOf
+ //  - Object.keys
  //  - Object.prototype.valueOf
  //  - Object.prototype.isPrototypeOf
  //  - Object.prototype.toString
  //  - Object.prototype.hasOwnProperty
  //  - Object.getOwnPropertyDescriptor
- //  - Object.keys
+ //  - Object.defineProperty
+ //  - Object.defineProperties
+ //  - Object.getOwnPropertyNames
+ //  - Object.getPrototypeOf
+ //  - Object.setPrototypeOf
  //  - Function.prototype.toString
  //  - Date.prototype.toString
  //  - Array.isArray
+ //  - Array.prototype.concat
  //  - Proxy
  // Adds new globals:
  //  - Reflect
