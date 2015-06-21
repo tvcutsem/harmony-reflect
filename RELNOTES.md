@@ -1,3 +1,10 @@
+v1.3.1
+======
+
+Release date: June 21st, 2015
+
+  * The `Proxy` object is only patched if `Proxy.create` exists.
+
 v1.3.0
 ======
 
