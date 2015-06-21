@@ -1978,8 +1978,10 @@ var Reflect = global.Reflect = {
   }
 };
 
-// feature-test whether the Proxy global exists
-if (typeof Proxy !== "undefined") {
+// feature-test whether the Proxy global exists, with
+// the harmony-era Proxy.create API
+if (typeof Proxy !== "undefined" &&
+    typeof Proxy.create !== "undefined") {
 
   var primCreate = Proxy.create,
       primCreateFunction = Proxy.createFunction;
@@ -2036,7 +2038,7 @@ if (typeof Proxy !== "undefined") {
   // Proxy global not defined, so proxies are not supported
 
   global.Proxy = function(_target, _handler) {
-    throw new Error("proxies not supported on this platform");
+    throw new Error("proxies not supported on this platform. On v8/node/iojs, make sure to pass the --harmony_proxies flag");
   }
 
 }
