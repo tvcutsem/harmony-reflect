@@ -13,7 +13,7 @@ If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org
 
 Then:
 
-    node --harmony
+    node --harmony_proxies
     > var Reflect = require('harmony-reflect');
 
 See [release notes](https://github.com/tvcutsem/harmony-reflect/blob/master/RELNOTES.md) for changes to the npm releases.
@@ -45,18 +45,18 @@ Compatibility
 The `Reflect` API, with support for proxies, was tested on:
 
   * Firefox (>= v4.0)
-  * Chrome (>= v19 && <= v37), with the following flag enabled: `chrome://flags/#enable-javascript-harmony` (copy/paste into your address-bar)
-  * `node --harmony` (>= v0.7.8)
-
-Note: Chrome v38 seems to have [removed](https://code.google.com/p/v8/issues/detail?id=1543#c44)
-the `Proxy` constructor. As a result, this library cannot patch the harmony-era `Proxy` object on
-Chrome v38. If you're working with chromium directly, it's still possible to enable proxies using
-`chromium-browser --js-flags="--harmony_proxies"`.
-
-You can also run the code in one of the following headless JavaScript shells:
-
-  * `v8 --harmony` (>= v3.6)
+  * `node --harmony_proxies` (>= v0.7.8)
+  * `iojs --harmony_proxies` (>= 2.3.0)
+  * `v8 --harmony_proxies` (>= v3.6)
   * Any recent `js` spidermonkey shell
+
+Note:
+
+  * Chrome (>= v19 && <= v37) used to support proxies behind a flag
+    (`chrome://flags/#enable-javascript-harmony`) but Chrome v38  [removed](https://code.google.com/p/v8/issues/detail?id=1543#c44) the `Proxy` constructor. As a result, this library cannot patch the harmony-era `Proxy` object on Chrome v38 or above. If you're working with chromium directly, it's still possible to enable proxies using `chromium-browser --js-flags="--harmony_proxies"`.
+  * In earlier versions of v8, the `Proxy` constructor was enabled by
+    default when starting v8 with `--harmony`. For recent versions of v8,
+    `Proxy` must be explicitly enabled with `--harmony_proxies`.
 
 Dependencies
 ============
