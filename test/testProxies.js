@@ -130,6 +130,7 @@ load('../reflect.js');
       testSetPrototypeOfUndefined();
       testUpdatePropertyDescriptor();
       testDeprecatedGetOwnPropertyNames();
+      testProxiesForArrays();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -873,6 +874,17 @@ load('../reflect.js');
     assert(ownProps.length === 1 && ownProps[0] === 'a',
            'testDeprecatedGetOwnPropertyNames');
   }
+  
+  // test whether proxies for arrays are treated as arrays
+  function testProxiesForArrays() {
+    var p = Proxy([], {}); // a proxy for an array
+    assert(Object.prototype.toString.call(p) === '[object Array]',
+           'toString(p) = [object Array]');
+    assert(Array.isArray(p), 'Array.isArray(p)');
+    // below test fails because JSON.stringify uses a [[Class]] check
+    // to test whether p is an array, and we can't intercept that
+    // assert(Array.isArray(JSON.parse(JSON.stringify(p))), 'JSON stringify array');
+  };
 
   // invoke experiment
   /*function testInvokeTrap() {
