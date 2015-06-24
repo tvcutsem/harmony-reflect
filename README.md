@@ -1,18 +1,18 @@
 [![NPM version](https://badge.fury.io/js/harmony-reflect.svg)](http://badge.fury.io/js/harmony-reflect) [![Dependencies](https://david-dm.org/tvcutsem/harmony-reflect.png)](https://david-dm.org/tvcutsem/harmony-reflect)
 
-This is a shim for the ECMAScript 6 [Reflect](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object) and [Proxy](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-proxy-objects) objects.
+This is a shim for the ECMAScript 6 [Reflect](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object) and [Proxy](http://www.ecma-international.org/ecma-262/6.0/#sec-proxy-objects) objects.
 
 This library does two things:
 
   - It defines an ES6-compliant `Reflect` global object that exports the ECMAScript 6 reflection API.
-  - It patches the harmony-era (pre-ES6) `Proxy` object to be up-to-date with the latest ES6 spec.
+  - It patches the harmony-era (pre-ES6) `Proxy` object to be up-to-date with the [ES6 spec](http://www.ecma-international.org/ecma-262/6.0/).
 
 Read [Why should I use this library?](https://github.com/tvcutsem/harmony-reflect/wiki)
 
 Installation
 ============
 
-If you are using node.js (>= v0.7.8), you can install via [npm](http://npmjs.org):
+For node.js, install via [npm](http://npmjs.org):
 
     npm install harmony-reflect
 
@@ -27,7 +27,7 @@ To use in a browser, just download the single reflect.js file. After loading
 
     <script src="reflect.js"></script>
 
-a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://people.mozilla.org/~jorendorff/es6-draft.html#sec-reflect-object).
+a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object).
 
 This library also updates the "harmony-era" `Proxy` object in the V8 engine
 (also used in node.js) to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://www.ecma-international.org/ecma-262/6.0/). To create such a proxy, call:
@@ -129,12 +129,18 @@ handlers must implement.
 Spec Compatibility
 ==================
 
-This library differs from the [rev 27 (august 2014) draft ECMAScript 6 spec](http://wiki.ecmascript.org/doku.php?id=harmony:specification_drafts#august_24_2014_draft_rev_27) as follows:
+This library differs from the [ECMAScript 2015 spec](http://www.ecma-international.org/ecma-262/6.0/) as follows:
 
-  * In ES6, `Proxy` will be a constructor function that will _require_ the use
+  * In ES6, `Proxy` is a constructor function that _requires_ the use
     of `new`. That is, you must write `new Proxy(target, handler)`. This library
     exports `Proxy` as an ordinary function which may be called with or without using the `new` operator.
-  * `Array.isArray(obj)` and `[].concat(obj)` are patched so they work
-    transparently on proxies-for-arrays (e.g. when `obj` is `new Proxy([],{})`).
-    The current ES6 draft spec [does not treat proxies-for-arrays as genuine
-    arrays for these operations](https://esdiscuss.org/topic/array-isarray-new-proxy-should-be-false-bug-1096753). Update (Nov. 2014): it looks like the ES6 spec will change so that `Array.isArray` and other methods that test for arrayness will work transparently on proxies, so this shim's behavior will become the standardized behavior.
+    
+  * In ES6, `Function.prototype.toString` and `Date.prototype.toString` do not
+    operate transparently on Proxies. This shim patches those functions so that
+    stringifying a Proxy-for-a-function or a Proxy-for-a-date "unwraps" the
+    proxy and instead stringifies the target of the Proxy. This behavior may
+    change in the future to be more spec-compatible.
+    
+  * This library does not shim [Symbol objects](http://www.ecma-international.org/ecma-262/6.0/#sec-symbol-objects).
+  
+  * Proxies-for-arrays are serialized as JSON objects rather than as JSON arrays. That is, `JSON.stringify(new Proxy([], {}))` returns "{}" rather than "[]". [Read more]( https://github.com/tvcutsem/harmony-reflect/issues/13#issuecomment-17249465).
