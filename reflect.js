@@ -2033,6 +2033,13 @@ if (typeof Proxy !== "undefined" &&
     };
     return {proxy: proxy, revoke: revoke};
   }
+  
+  // add the old Proxy.create and Proxy.createFunction methods
+  // so old code that still depends on the harmony-era Proxy object
+  // is not broken. Also ensures that multiple versions of this
+  // library should load fine
+  global.Proxy.create = primCreate;
+  global.Proxy.createFunction = primCreateFunction;
 
 } else {
   // Proxy global not defined, so proxies are not supported
