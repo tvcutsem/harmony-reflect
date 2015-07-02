@@ -1,3 +1,14 @@
+v1.4.0
+======
+
+Release date: July 2nd, 2015
+
+  * The patched `Proxy` object exported by this library now leaves
+    the old `Proxy.create` and `Proxy.createFunction` untouched, so
+    old code that needs it can still use it. Also, this makes the
+    library robust against multiple versions of itself being loaded.
+    See issue #56.
+
 v1.3.1
 ======
 
