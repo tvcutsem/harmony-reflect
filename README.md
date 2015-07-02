@@ -27,7 +27,7 @@ To use in a browser, just download the single reflect.js file. After loading
 
     <script src="reflect.js"></script>
 
-a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 draft](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object).
+a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 spec](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object).
 
 This library also updates the "harmony-era" `Proxy` object in the V8 engine
 (also used in node.js) to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://www.ecma-international.org/ecma-262/6.0/). To create such a proxy, call:
