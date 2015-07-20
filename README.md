@@ -30,9 +30,12 @@ To use in a browser, just download the single reflect.js file. After loading
 a global object `Reflect` is defined that contains reflection methods as defined in the [ES6 spec](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object).
 
 This library also updates the "harmony-era" `Proxy` object in the V8 engine
-(also used in node.js) to follow the latest [direct proxies](http://wiki.ecmascript.org/doku.php?id=harmony:direct_proxies) [spec](http://www.ecma-international.org/ecma-262/6.0/). To create such a proxy, call:
+(also used in node.js) to follow the latest [ECMAScript 2015](http://www.ecma-international.org/ecma-262/6.0/) spec.
+To create such a proxy, call:
 
     var proxy = new Proxy(target, handler)
+
+See below for a list of spec incompatibilities and other gotcha's.
 
 API Docs
 ========
@@ -126,8 +129,8 @@ defines a number of predefined Proxy handlers as "abstract classes" that your
 code can "subclass" The goal is to minimize the number of traps that your proxy
 handlers must implement.
 
-Spec Compatibility
-==================
+Spec Incompatibilities and other gotcha's
+=========================================
 
 This library differs from the [ECMAScript 2015 spec](http://www.ecma-international.org/ecma-262/6.0/) as follows:
 
@@ -142,5 +145,7 @@ This library differs from the [ECMAScript 2015 spec](http://www.ecma-internation
     change in the future to be more spec-compatible.
     
   * This library does not shim [Symbol objects](http://www.ecma-international.org/ecma-262/6.0/#sec-symbol-objects).
+    On modern v8 or iojs which supports Symbol objects natively, due to a bug in V8, Symbols and Proxies
+    don't play well together. [Read more](https://github.com/tvcutsem/harmony-reflect/issues/57).
   
   * Proxies-for-arrays are serialized as JSON objects rather than as JSON arrays. That is, `JSON.stringify(new Proxy([], {}))` returns "{}" rather than "[]". [Read more]( https://github.com/tvcutsem/harmony-reflect/issues/13#issuecomment-17249465).
