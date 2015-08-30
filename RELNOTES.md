@@ -1,4 +1,4 @@
-v1.4.1
+v1.4.2
 ======
 
 Release date: August 30th, 2015
@@ -7,6 +7,8 @@ Release date: August 30th, 2015
     than overwriting it with a dummy function) if it exists but
     does not implement the old Proxy API (such as IE Edge).
     See issue #59.
+  * Clarified incompatibility of this library with ES6 Symbols in
+    the README.
 
 v1.4.0
 ======

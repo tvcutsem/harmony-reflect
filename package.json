@@ -1,6 +1,6 @@
 {
   "name": "harmony-reflect",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "ES5 shim for ES6 (ECMAScript 6) Reflect and Proxy objects",
   "main": "reflect.js",
   "keywords": [
