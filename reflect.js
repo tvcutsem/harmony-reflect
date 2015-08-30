@@ -2042,12 +2042,15 @@ if (typeof Proxy !== "undefined" &&
   global.Proxy.createFunction = primCreateFunction;
 
 } else {
-  // Proxy global not defined, so proxies are not supported
-
-  global.Proxy = function(_target, _handler) {
-    throw new Error("proxies not supported on this platform. On v8/node/iojs, make sure to pass the --harmony_proxies flag");
+  // Proxy global not defined, or old API not available
+  if (typeof Proxy === "undefined") {
+    // Proxy global not defined, add a Proxy function stub
+    global.Proxy = function(_target, _handler) {
+      throw new Error("proxies not supported on this platform. On v8/node/iojs, make sure to pass the --harmony_proxies flag");
+    };
   }
-
+  // Proxy global defined but old API not available
+  // presumably Proxy global already supports new API, leave untouched
 }
 
 // for node.js modules, export every property in the Reflect object
