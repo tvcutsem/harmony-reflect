@@ -1,3 +1,13 @@
+v1.4.1
+======
+
+Release date: August 30th, 2015
+
+  * This library now leaves the `Proxy` global untouched (rather
+    than overwriting it with a dummy function) if it exists but
+    does not implement the old Proxy API (such as IE Edge).
+    See issue #59.
+
 v1.4.0
 ======
 
