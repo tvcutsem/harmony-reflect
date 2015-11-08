@@ -18,7 +18,7 @@ For node.js, install via [npm](http://npmjs.org):
 
 Then:
 
-    node --harmony_proxies
+    node --harmony-proxies
     > var Reflect = require('harmony-reflect');
 
 See [release notes](https://github.com/tvcutsem/harmony-reflect/blob/master/RELNOTES.md) for changes to the npm releases.
@@ -33,7 +33,7 @@ This library also updates the "harmony-era" `Proxy` object in the V8 engine
 (also used in node.js) to follow the latest [ECMAScript 2015](http://www.ecma-international.org/ecma-262/6.0/) spec.
 To create such a proxy, call:
 
-    var proxy = new Proxy(target, handler)
+    var proxy = new Proxy(target, handler);
 
 See below for a list of spec incompatibilities and other gotcha's.
 
@@ -65,9 +65,9 @@ library should work on any modern ES5 engine (including all browsers).
 Compatibility notes:
 
   * Chrome (>= v19 && <= v37) used to support proxies behind a flag
-    (`chrome://flags/#enable-javascript-harmony`) but Chrome v38  [removed](https://code.google.com/p/v8/issues/detail?id=1543#c44) the `Proxy` constructor. As a result, this library cannot patch the harmony-era `Proxy` object on Chrome v38 or above. If you're working with chromium directly, it's still possible to enable proxies using `chromium-browser --js-flags="--harmony_proxies"`.
-  * In older versions of v8, the `Proxy` constructor was enabled by
-    default when starting v8 with `--harmony`. For recent versions of v8,
+    (`chrome://flags/#enable-javascript-harmony`) but Chrome v38  [removed](https://code.google.com/p/v8/issues/detail?id=1543#c44) the `Proxy` constructor. As a result, this library cannot patch the harmony-era `Proxy` object on Chrome v38 or above. If you're working with Chromium directly, it's still possible to enable proxies using `chromium-browser --js-flags="--harmony_proxies"`.
+  * In older versions of V8, the `Proxy` constructor was enabled by
+    default when starting V8 with `--harmony`. For recent versions of V8,
     `Proxy` must be explicitly enabled with `--harmony_proxies`.
 
 Dependencies
@@ -145,7 +145,7 @@ This library differs from the [ECMAScript 2015 spec](http://www.ecma-internation
     change in the future to be more spec-compatible.
     
   * This library does not shim [Symbol objects](http://www.ecma-international.org/ecma-262/6.0/#sec-symbol-objects).
-    On modern v8 or iojs which supports Symbol objects natively, due to a bug in V8, Symbols and Proxies
+    On modern V8 or io.js which supports Symbol objects natively, due to a bug in V8, Symbols and Proxies
     don't play well together. [Read more](https://github.com/tvcutsem/harmony-reflect/issues/57).
   
   * Proxies-for-arrays are serialized as JSON objects rather than as JSON arrays. That is, `JSON.stringify(new Proxy([], {}))` returns "{}" rather than "[]". [Read more]( https://github.com/tvcutsem/harmony-reflect/issues/13#issuecomment-17249465).
