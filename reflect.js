@@ -1773,7 +1773,7 @@ var Reflect = global.Reflect = {
       return handler.setPrototypeOf(newProto);
     }
     
-    if (Object(newProto) !== newProto || newProto === null) {
+    if (newProto !== null && Object(newProto) !== newProto) {
       throw new TypeError("Object prototype may only be an Object or null: " +
                          newProto);
     }
@@ -1991,6 +1991,11 @@ if (typeof Proxy !== "undefined" &&
   });
 
   global.Proxy = function(target, handler) {
+    //check that this is an instance of Proxy
+    if(!(this instanceof Proxy)){
+      throw new TypeError("Class constructors cannot be invoked without 'new'");
+    }
+
     // check that target is an Object
     if (Object(target) !== target) {
       throw new TypeError("Proxy target must be an Object, given "+target);
