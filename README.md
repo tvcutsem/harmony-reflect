@@ -118,6 +118,7 @@ Other example uses of proxies (not done by me, but using this library):
   * supporting [negative array indices](https://github.com/sindresorhus/negative-array) a la Python
   * [tpyo](https://github.com/mathiasbynens/tpyo): using proxies to correct typo's in JS property names
   * [persistent objects](http://tagtree.tv/es6-proxies): shows how one might go about using proxies to save updates to objects in a database incrementally
+  * [defaultdict](https://github.com/greenify/defaultdict2): default values for new keys in objects (as known from Python)
 
 For more examples of proxies, and a good overview of their design rationale, I recommend reading [Axel Rauschmayer's blog post on proxies](http://www.2ality.com/2014/12/es6-proxies.html).
 
