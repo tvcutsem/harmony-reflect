@@ -668,6 +668,7 @@ Validator.prototype = {
       }
     }
 
+    /*
     if (desc.configurable === false && !isSealedDesc(targetDesc)) {
       // if the property is configurable or non-existent on the target,
       // but is reported as a non-configurable property, it may later be
@@ -677,6 +678,7 @@ Validator.prototype = {
       throw new TypeError("cannot report a non-configurable descriptor "+
                           "for configurable or non-existent property '"+name+"'");
     }
+    */
 
     return desc;
   },
