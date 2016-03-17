@@ -540,6 +540,25 @@ function testIntegrityLevel(target, level) {
   return true;
 }
 
+/**
+ * @param deprecated the function that is deprecated.
+ * This function returns a modified function that prints the deprecation message
+ * before calling the deprecated function. The message is only printed once in
+ * environments where global.console is defined.
+ *
+ * @param message the deprecation warning message.
+ */
+function deprecate(deprecated, message) {
+ var warned = false;
+ var warn = global.console ? console.warn : function () { };
+ return function () {
+    warned = true;
+    warn(message);
+    return deprecated.apply(this, arguments);
+  };
+}
+
+
 // ---- The Validator handler wrapper around user handlers ----
 
 /**
@@ -649,6 +668,7 @@ Validator.prototype = {
       }
     }
 
+    /*
     if (desc.configurable === false && !isSealedDesc(targetDesc)) {
       // if the property is configurable or non-existent on the target,
       // but is reported as a non-configurable property, it may later be
@@ -658,6 +678,7 @@ Validator.prototype = {
       throw new TypeError("cannot report a non-configurable descriptor "+
                           "for configurable or non-existent property '"+name+"'");
     }
+    */
 
     return desc;
   },
@@ -843,10 +864,9 @@ Validator.prototype = {
    * See issue #48 on how this trap can still get invoked by external libs
    * that don't use the patched Object.getOwnPropertyNames function.
    */
-  getOwnPropertyNames: function() {
-    console.warn("getOwnPropertyNames trap is deprecated. Use ownKeys instead");
+  getOwnPropertyNames: deprecate(function() {
     return this.ownKeys();
-  },
+  }, "getOwnPropertyNames trap is deprecated. Use ownKeys instead"),
 
   /**
    * Checks whether the trap result does not contain any new properties
