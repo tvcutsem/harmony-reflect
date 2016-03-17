@@ -1631,7 +1631,7 @@ var __proto__setter = (function() {
 
   prim_defineProperty(Object.prototype, '__proto__', {
     set: function(newProto) {
-      return Object.setPrototypeOf(this, newProto);
+      return Object.setPrototypeOf(this, Object(newProto));
     }
   });
 
