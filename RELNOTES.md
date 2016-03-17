@@ -1,3 +1,11 @@
+v1.4.3
+======
+
+Release date: March 17th, 2016
+
+  * `Reflect.construct()` now works on ES6 classes (See issue #69).
+  * The patched `__proto__` set accessor now converts the argument prototype to an Object. This fixes issue #67 (tab-completion in node.js no longer crashes when this module is loaded).
+
 v1.4.2
 ======
 
