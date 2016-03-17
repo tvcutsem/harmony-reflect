@@ -1971,9 +1971,7 @@ var Reflect = global.Reflect = {
       }      
     }
 
-    var proto = newTarget.prototype;
-    var instance = (Object(proto) === proto) ? Object.create(proto) : {};
-    var result = Function.prototype.apply.call(target, instance, args);
+    var result = new (Function.prototype.bind.apply(newTarget, [null].concat(args)));
     return Object(result) === result ? result : instance;
   }
 };

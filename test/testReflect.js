@@ -306,8 +306,14 @@ function test() {
   
   // [[Construct]] newTarget
   (function() {
+    "use strict";
     var Super = function() { };
     var Sub = function() { };
+    var ES2015Class = class {
+      constructor () {
+        this.prop = "someValue";
+      }
+    };
     var instance = Reflect.construct(Super, [], Sub);
     assert(Object.getPrototypeOf(instance) === Sub.prototype,
            "instance prototype === newTarget");
@@ -315,6 +321,10 @@ function test() {
     var instance2 = Reflect.construct(Super, []);
     assert(Object.getPrototypeOf(instance2) === Super.prototype,
           "newTarget defaults to target");
+
+    var instance3 = Reflect.construct(ES2015Class, []);
+    assert(instance3.prop === "someValue",
+          "correctly instantiates ES2015 classes");
   }());
   
 }
