@@ -844,7 +844,14 @@ Validator.prototype = {
    * that don't use the patched Object.getOwnPropertyNames function.
    */
   getOwnPropertyNames: function() {
-    console.warn("getOwnPropertyNames trap is deprecated. Use ownKeys instead");
+    // Note: removed deprecation warning to avoid dependency on 'console'
+    // (and on node, should anyway use util.deprecate). Deprecation warnings
+    // can also be annoying when they are outside of the user's control, e.g.
+    // when an external library calls unpatched Object.getOwnPropertyNames.
+    // Since there is a clean fallback to `ownKeys`, the fact that the
+    // deprecated method is still called is mostly harmless anyway.
+    // See also issues #65 and #66.
+    // console.warn("getOwnPropertyNames trap is deprecated. Use ownKeys instead");
     return this.ownKeys();
   },
 
