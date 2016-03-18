@@ -1,3 +1,11 @@
+v1.4.4
+======
+
+Release date: March 19th, 2016
+
+  * Minor bugfix in `Reflect.construct()`.
+  * Removed deprecation notice when unpatched `Object.getOwnPropertyNames(proxy)` used in external modules would still trigger the old `getOwnPropertyNames` trap (See issue #66).
+
 v1.4.3
 ======
 
