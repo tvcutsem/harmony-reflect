@@ -1971,8 +1971,7 @@ var Reflect = global.Reflect = {
       }      
     }
 
-    var result = new (Function.prototype.bind.apply(newTarget, [null].concat(args)));
-    return Object(result) === result ? result : instance;
+    return new (Function.prototype.bind.apply(newTarget, [null].concat(args)));
   }
 };
 
