@@ -86,6 +86,7 @@ After loading `reflect.js` into your page or other JS environment, be aware that
     Object.defineProperty
     Object.defineProperties
     Object.getOwnPropertyNames
+    Object.getOwnPropertySymbols
     Object.keys
     Object.{get,set}PrototypeOf
     Object.{freeze,seal,preventExtensions}

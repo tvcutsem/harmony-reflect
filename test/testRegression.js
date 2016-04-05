@@ -222,6 +222,18 @@ function test() {
           'delete on a proxy of a proxy');
   }());
   
+  // see https://github.com/tvcutsem/harmony-reflect/issues/71
+  (function () {
+
+    if (Object.getOwnPropertySymbols) {
+      var p = new Proxy({}, {});
+      var ownSymbols = Object.getOwnPropertySymbols(p);
+      assert(Array.isArray(ownSymbols) && ownSymbols.length === 0,
+            'getOwnPropertySymbols(proxy) returns []');
+    }
+    
+  }());
+  
 }
 
 if (typeof window === "undefined") {

@@ -71,6 +71,7 @@
  //  - Object.defineProperty
  //  - Object.defineProperties
  //  - Object.getOwnPropertyNames
+ //  - Object.getOwnPropertySymbols
  //  - Object.getPrototypeOf
  //  - Object.setPrototypeOf
  //  - Function.prototype.toString
@@ -359,6 +360,7 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_defineProperties =         Object.defineProperties,
     prim_keys =                     Object.keys,
     prim_getOwnPropertyNames =      Object.getOwnPropertyNames,
+    prim_getOwnPropertySymbols =    Object.getOwnPropertySymbols,
     prim_isArray =                  Array.isArray,
     prim_concat =                   Array.prototype.concat,
     prim_isPrototypeOf =            Object.prototype.isPrototypeOf,
@@ -1500,6 +1502,21 @@ Object.getOwnPropertyNames = Object_getOwnPropertyNames = function(subject) {
   } else {
     return prim_getOwnPropertyNames(subject);
   }
+}
+
+// fixes issue #71 (Calling Object.getOwnPropertySymbols() on a Proxy
+// throws an error)
+if (prim_getOwnPropertySymbols !== undefined) {
+  Object.getOwnPropertySymbols = function(subject) {
+    var vHandler = directProxies.get(subject);
+    if (vHandler !== undefined) {
+      // as this shim does not support symbols, a Proxy never advertises
+      // any symbol-valued own properties
+      return [];
+    } else {
+      return prim_getOwnPropertySymbols(subject);
+    }
+  };
 }
 
 // returns whether an argument is a reference to an object,
