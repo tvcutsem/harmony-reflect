@@ -1,3 +1,10 @@
+v1.4.5
+======
+
+Release date: April 5th, 2016
+
+  * Patched `Object.getOwnPropertySymbols(proxy)` to always return `[]` (only if the ES6 global `Object.getOwnPropertySymbols` exists). Symbols are not supported by this shim, but at least this patch stops code that tries to get the own symbol-valued properties of a proxy from crashing. (See issue #71).
+  
 v1.4.4
 ======
 
