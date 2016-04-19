@@ -74,6 +74,7 @@
  //  - Object.getOwnPropertySymbols
  //  - Object.getPrototypeOf
  //  - Object.setPrototypeOf
+ //  - Object.assign
  //  - Function.prototype.toString
  //  - Date.prototype.toString
  //  - Array.isArray
@@ -361,6 +362,7 @@ var prim_preventExtensions =        Object.preventExtensions,
     prim_keys =                     Object.keys,
     prim_getOwnPropertyNames =      Object.getOwnPropertyNames,
     prim_getOwnPropertySymbols =    Object.getOwnPropertySymbols,
+    prim_assign =                   Object.assign,
     prim_isArray =                  Array.isArray,
     prim_concat =                   Array.prototype.concat,
     prim_isPrototypeOf =            Object.prototype.isPrototypeOf,
@@ -1516,6 +1518,50 @@ if (prim_getOwnPropertySymbols !== undefined) {
     } else {
       return prim_getOwnPropertySymbols(subject);
     }
+  };
+}
+
+// fixes issue #72 ('Illegal access' error when using Object.assign)
+// Object.assign polyfill based on a polyfill posted on MDN: 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/\
+//  Global_Objects/Object/assign
+// Note that this polyfill does not support Symbols, but this Proxy Shim
+// does not support Symbols anyway.
+if (prim_assign !== undefined) {
+  Object.assign = function (target) {
+    
+    // check if any argument is a proxy object
+    var noProxies = true;
+    for (var i = 0; i < arguments.length; i++) {
+      var vHandler = directProxies.get(arguments[i]);
+      if (vHandler !== undefined) {
+        noProxies = false;
+        break;
+      }
+    }
+    if (noProxies) {
+      // not a single argument is a proxy, perform built-in algorithm
+      return prim_assign.apply(Object, arguments);
+    }
+    
+    // there is at least one proxy argument, use the polyfill
+    
+    if (target === undefined || target === null) {
+      throw new TypeError('Cannot convert undefined or null to object');
+    }
+
+    var output = Object(target);
+    for (var index = 1; index < arguments.length; index++) {
+      var source = arguments[index];
+      if (source !== undefined && source !== null) {
+        for (var nextKey in source) {
+          if (source.hasOwnProperty(nextKey)) {
+            output[nextKey] = source[nextKey];
+          }
+        }
+      }
+    }
+    return output;
   };
 }
 

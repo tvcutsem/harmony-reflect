@@ -234,6 +234,28 @@ function test() {
     
   }());
   
+  // see https://github.com/tvcutsem/harmony-reflect/issues/72
+  (function () {
+    if (Object.assign) {
+      var o1 = { x: 'a'};
+      var o2 = { y: 'b'};
+      Object.assign(o1, o2);
+      assert(o1.y === 'b', 'Object.assign works on normal objects');        
+      
+      var o3 = { x: 'a'};
+      var p1 = new Proxy(o3, {});
+      var o4 = Object.assign({}, p1);
+      assert(o4.x === 'a', 'Object.assign works on proxy argument');
+      
+      var o5 = { x: 'a'};
+      var o6 = { y: 'b'};
+      var p1 = new Proxy(o5, {});
+      var o7 = Object.assign(p1, o6);
+      assert(o7.x === 'a' && o7.y === 'b',
+             'Object.assign works on proxy target');       
+    }
+  }());
+  
 }
 
 if (typeof window === "undefined") {
