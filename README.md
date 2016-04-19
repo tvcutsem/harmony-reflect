@@ -9,7 +9,8 @@ This library does two things:
 
 Read [Why should I use this library?](https://github.com/tvcutsem/harmony-reflect/wiki)
 
-**Feb 2016 update**: the recently released [V8 v4.9](http://v8project.blogspot.com.au/2016/01/v8-release-49.html) includes native support for ES2015 Proxies and Reflect, making this library obsolete for environments that embed V8 4.9 or newer (like Chrome 49).
+**Feb 2016 update**: the recently released [V8 v4.9](http://v8project.blogspot.com.au/2016/01/v8-release-49.html) includes native support for ES2015 Proxies and Reflect, making this library obsolete for environments that embed V8 4.9 or newer (like Chrome 49). Node v5.10.x still
+embeds V8 4.6 and requires this polyfill for proper ES6 Proxy support.
 
 Installation
 ============
