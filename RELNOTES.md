@@ -1,3 +1,10 @@
+v1.4.6
+======
+
+Release date: April 19th, 2016
+
+  * ES6 `Object.assign(...args)` would fail when one of the arguments is a Proxy object. Patched `Object.assign` to fall back on an ES5 shim when at least one of the arguments is a Proxy object (See issue #72).
+
 v1.4.5
 ======
 
