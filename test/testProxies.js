@@ -207,7 +207,7 @@ load('../reflect.js');
         return createArrayIterator(props);
       }
     };
-    return Proxy(target, handler);
+    return new Proxy(target, handler);
   }
 
   /**
@@ -521,7 +521,7 @@ load('../reflect.js');
   function testTrapEvenWhenFrozen() {
     var target = {};
     var forwarder = {};
-    var proxy = Proxy(target, forwarder);
+    var proxy = new Proxy(target, forwarder);
     assert(proxy.x === undefined, 'proxy.x === undefined');
 
     Object.defineProperty(proxy,'x',
@@ -584,7 +584,7 @@ load('../reflect.js');
       configurable: false
     });
 
-    var proxy = Proxy(target, {});
+    var proxy = new Proxy(target, {});
 
     result = Object.getOwnPropertyDescriptor(proxy, 'non-existent-prop');
     assert(result === undefined,
@@ -671,7 +671,7 @@ load('../reflect.js');
   function testInheritance() {
     var child;
     var called = false;
-    var proxy = Proxy({}, {
+    var proxy = new Proxy({}, {
       has: function(tgt, name) {
         return name === 'foo';
       },
@@ -701,7 +701,7 @@ load('../reflect.js');
 
   function testFunctions() {
     var fun = function(){};
-    var proxy = Proxy(fun, {
+    var proxy = new Proxy(fun, {
       apply: function(tgt, thisBinding, args) {
         assert(tgt === fun, 'apply: target is correct');
         assert(thisBinding === undefined, 'apply: thisBinding is correct');
@@ -720,7 +720,7 @@ load('../reflect.js');
 
   function testSet() {
     var t = {};
-    var p = Proxy(t, {
+    var p = new Proxy(t, {
       defineProperty: function(tgt,name,desc) {
         assert(name === 'x', 'testSet defineProperty name === x');
         assert(desc.value === 1, 'testSet defineProperty value === 1');
@@ -745,8 +745,8 @@ load('../reflect.js');
     // dates
     (function(){
       var d = new Date();
-      var dp = Proxy(d,{});
-      var dpp = Proxy(dp,{});
+      var dp = new Proxy(d,{});
+      var dpp = new Proxy(dp,{});
 
       var str = Date.prototype.toString.call(d);
       assert(str === Date.prototype.toString.call(dp),
@@ -759,8 +759,8 @@ load('../reflect.js');
     // functions
     (function(){
       var f = function() { return 42; };
-      var fp = Proxy(f,{});
-      var fpp = Proxy(fp,{});
+      var fp = new Proxy(f,{});
+      var fpp = new Proxy(fp,{});
 
       var str = Function.prototype.toString.call(f);
       assert(str === Function.prototype.toString.call(fp),
@@ -773,8 +773,8 @@ load('../reflect.js');
     // arrays
     (function(){
       var a = [1,2,3];
-      var ap = Proxy(a,{});
-      var app = Proxy(ap,{});
+      var ap = new Proxy(a,{});
+      var app = new Proxy(ap,{});
 
       var str = Array.prototype.toString.call(a);
       assert(str === Array.prototype.toString.call(ap),
@@ -822,7 +822,7 @@ load('../reflect.js');
                    Object.setPrototypeOf(Object.preventExtensions({}), {});
                  });
 
-    var p = Proxy({}, {
+    var p = new Proxy({}, {
       setPrototypeOf: function(target, newProto) {
         assert(newProto === newParent, 'newProto === newParent');
         return Reflect.setPrototypeOf(target, newProto);
@@ -833,7 +833,7 @@ load('../reflect.js');
 
     assertThrows("prototype value does not match: " + {},
       function() {
-        var p = Proxy(Object.preventExtensions({}), {
+        var p = new Proxy(Object.preventExtensions({}), {
           setPrototypeOf: function(target, newProto) {
             return true;
           }
@@ -856,7 +856,7 @@ load('../reflect.js');
   function testUpdatePropertyDescriptor() {
     var obj = {};
     Object.defineProperty(obj, 'prop', {value: true, configurable: true});
-    var proxy = Proxy(obj, {
+    var proxy = new Proxy(obj, {
       defineProperty: function(target, name, desc) {
         return Object.defineProperty(obj, name, desc);
       }
@@ -877,7 +877,7 @@ load('../reflect.js');
   
   // test whether proxies for arrays are treated as arrays
   function testProxiesForArrays() {
-    var p = Proxy([], {}); // a proxy for an array
+    var p = new Proxy([], {}); // a proxy for an array
     assert(Object.prototype.toString.call(p) === '[object Array]',
            'toString(p) = [object Array]');
     assert(Array.isArray(p), 'Array.isArray(p)');

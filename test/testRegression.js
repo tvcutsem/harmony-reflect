@@ -64,7 +64,7 @@ function test() {
   (function(){
     // https://github.com/tvcutsem/harmony-reflect/issues/11
     function f() {}
-    var p = Proxy(f, {});
+    var p = new Proxy(f, {});
     var proto = {};
     p.prototype = proto;
     assert(p.prototype === proto, 'prototype changed via p');
@@ -102,7 +102,7 @@ function test() {
     // https://github.com/tvcutsem/harmony-reflect/issues/19
     var a = [1,2];
     var h = {};
-    var aProxy = Proxy(a, h);
+    var aProxy = new Proxy(a, h);
     var aConcat = [].concat(a);
     var aProxyConcat = [].concat(aProxy);
 
@@ -123,7 +123,7 @@ function test() {
     var b = {base: 'base'};
     var o = {foo: 'bar'};
     var h = {};
-    var oProxy = Proxy(o, h);
+    var oProxy = new Proxy(o, h);
     o.__proto__ = b;
     assert(b.isPrototypeOf(oProxy), 'isPrototypeOf test1');
   }());
@@ -132,10 +132,10 @@ function test() {
     // isPrototypeOf doesn't work if __proto__ is changed after proxy is created
     var a = {a : 'a'};
     var b = {base: 'base'};
-    var bProxy = Proxy(b, {});
+    var bProxy = new Proxy(b, {});
     b.__proto__ = a;
     var o = {foo: 'bar'};
-    var oProxy = Proxy(o, {});
+    var oProxy = new Proxy(o, {});
     o.__proto__ = bProxy;
     assert(bProxy.isPrototypeOf(oProxy), 'isPrototypeOf test2a');
     assert(a.isPrototypeOf(oProxy), 'isPrototypeOf test2b');
