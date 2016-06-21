@@ -137,6 +137,11 @@ handlers must implement.
 Spec Incompatibilities and other gotcha's
 =========================================
 
+This library differs from the [ECMAScript 2016 spec](http://www.ecma-international.org/ecma-262/7.0/index.html) as follows:
+
+  * In ES7, the `enumerate()` trap, and the corresponding `Reflect.enumerate()` method, have been [removed](https://github.com/tc39/ecma262/issues/161).
+    This shim still supports the trap.
+
 This library differs from the [ECMAScript 2015 spec](http://www.ecma-international.org/ecma-262/6.0/) as follows:
 
   * In ES6, `Proxy` is a constructor function that _requires_ the use
