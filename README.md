@@ -8,8 +8,9 @@ This library does two things:
   - If harmony-era (pre-ES6) `Proxy` support is available, it patches `Proxy` to be up-to-date with the [ES6 spec](http://www.ecma-international.org/ecma-262/6.0/).
 
 **July 2016 update**: the most recent version of all major browsers and node.js now [support fully
-ES6-compliant](http://kangax.github.io/compat-table/es6/#test-Proxy) `Reflect` and `Proxy` objects. This shim is primarily useful if you want ES6
-`Proxy` and `Reflect` support on versions of node.js < v6.0.0.
+ES6-compliant](http://kangax.github.io/compat-table/es6/#test-Proxy) `Reflect` and `Proxy` objects. This shim is primarily useful if you want ES6 `Reflect`
+support on older browsers or versions of node.js < v6.0.0, or if you want
+ES6 `Proxy` support on versions of node.js < v6.0.0.
 
 **May 2016 update**: the recently released [V8 v4.9](http://v8project.blogspot.com.au/2016/01/v8-release-49.html) includes native support for ES2015 Proxies and Reflect, making this library obsolete for environments that embed V8 4.9 or newer (like Chrome 49 and Node v6.0). Node v5.10.x or lower still requires this polyfill for proper ES6 Proxy support.
 
