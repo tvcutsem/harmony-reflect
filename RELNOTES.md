@@ -1,3 +1,12 @@
+v1.5.0
+======
+
+Release date: August 17th, 2016
+
+  * Added [missing proxy invariant checks](https://github.com/tc39/ecma262/pull/666)
+    in getOwnPropertyDescriptor, defineProperty and deleteProperty traps.
+  * Add typings for Reflect for TypeScript users.
+  
 v1.4.6
 ======
 

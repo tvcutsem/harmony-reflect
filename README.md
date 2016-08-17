@@ -146,6 +146,10 @@ This library differs from the [ECMAScript 2016 spec](http://www.ecma-internation
 
   * In ES7, the `enumerate()` trap, and the corresponding `Reflect.enumerate()` method, have been [removed](https://github.com/tc39/ecma262/issues/161).
     This shim still supports the trap.
+  * The ES7 (and ES6) spec contains a 
+    [bug](https://github.com/tc39/ecma262/pull/666) that leads to missing
+    invariant checks in the getOwnPropertyDescriptor, defineProperty and deleteProperty traps. This library already contains the patch referred
+    to in [this issue](https://github.com/tc39/ecma262/pull/666).
 
 This library differs from the [ECMAScript 2015 spec](http://www.ecma-international.org/ecma-262/6.0/) as follows:
 
