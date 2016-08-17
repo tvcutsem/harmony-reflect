@@ -131,6 +131,7 @@ load('../reflect.js');
       testUpdatePropertyDescriptor();
       testDeprecatedGetOwnPropertyNames();
       testProxiesForArrays();
+      testMissingInvariants();
       //testInvokeTrap();
 
       for (var testName in TESTS) {
@@ -884,7 +885,77 @@ load('../reflect.js');
     // below test fails because JSON.stringify uses a [[Class]] check
     // to test whether p is an array, and we can't intercept that
     // assert(Array.isArray(JSON.parse(JSON.stringify(p))), 'JSON stringify array');
-  };
+  }
+  
+  // see https://github.com/tc39/ecma262/pull/666
+  function testMissingInvariants() {
+    // a property reported as nonwritable, nonconfigurable must not
+    // change its value
+    (function() {
+      var target = Object.seal({x: 2});
+      var proxy = new Proxy(target, {
+          getOwnPropertyDescriptor: function(o, p) { 
+            var desc = Reflect.getOwnPropertyDescriptor(o, p);
+            if (desc && 'writable' in desc) {
+              desc.writable = false;              
+            }
+            return desc;
+          }
+      });
+
+      assertThrows(
+        "cannot report non-configurable, writable property 'x'" +
+        " as non-configurable, non-writable", function() {
+        Object.getOwnPropertyDescriptor(proxy, 'x'); // !!! should throw
+        // { value: 2, configurable: false, writable: false }
+        Object.defineProperty(proxy, 'x', { value: 3 });
+        var d = Object.getOwnPropertyDescriptor(proxy, 'x'); // { value: 3 }
+      });
+    }());
+    
+    // a property defined as nonwritable, nonconfigurable
+    // must not change its value
+    (function() {
+      var target = Object.seal({x: 2});
+      var proxy = new Proxy(target, {
+          defineProperty: function(o, p, desc) {
+            delete desc.writable;
+            return Reflect.defineProperty(o, p, desc);
+          }
+      });
+
+      assertThrows(
+        "cannot successfully define non-configurable, writable " +
+        " property 'x' as non-configurable, non-writable", function() {
+          Object.defineProperty(proxy, 'x', {
+            value: 2,
+            configurable: false,
+            writable: false });            
+          // !!! should throw
+          proxy.x = 3
+          Object.getOwnPropertyDescriptor(proxy, 'x'); // { value: 3 }
+      });
+    }());
+    
+    // a successfuly deleted property on a nonextensible object
+    // must not reappear
+    (function() {
+      "use strict";
+      var target = Object.preventExtensions({ x: 1 });
+      var proxy = new Proxy(target, { 
+         deleteProperty: function() { return true; } 
+      });
+
+      assert(!Object.isExtensible(proxy), 'proxy is non-extensible');
+      assertThrows(
+        "cannot successfully delete existing property 'x'" +
+        " on a non-extensible object", function() {
+          delete proxy.x; // true !!! should throw
+          proxy.hasOwnProperty('x'); // true
+      });
+    }());
+    
+  }
 
   // invoke experiment
   /*function testInvokeTrap() {

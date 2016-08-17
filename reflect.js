@@ -652,15 +652,30 @@ Validator.prototype = {
                             "for property '"+name+"'");
       }
     }
-
-    if (desc.configurable === false && !isSealedDesc(targetDesc)) {
-      // if the property is configurable or non-existent on the target,
-      // but is reported as a non-configurable property, it may later be
-      // reported as configurable or non-existent, which violates the
-      // invariant that if the property might change or disappear, the
-      // configurable attribute must be true.
-      throw new TypeError("cannot report a non-configurable descriptor "+
-                          "for configurable or non-existent property '"+name+"'");
+    
+    if (desc.configurable === false) {
+      if (targetDesc === undefined || targetDesc.configurable === true) {
+        // if the property is configurable or non-existent on the target,
+        // but is reported as a non-configurable property, it may later be
+        // reported as configurable or non-existent, which violates the
+        // invariant that if the property might change or disappear, the
+        // configurable attribute must be true.
+        throw new TypeError(
+          "cannot report a non-configurable descriptor " +
+          "for configurable or non-existent property '" + name + "'");
+      }
+      if ('writable' in desc && desc.writable === false) {
+        if (targetDesc.writable === true) {
+          // if the property is non-configurable, writable on the target,
+          // but is reported as non-configurable, non-writable, it may later
+          // be reported as non-configurable, writable again, which violates
+          // the invariant that a non-configurable, non-writable property
+          // may not change state.
+          throw new TypeError(
+            "cannot report non-configurable, writable property '" + name +
+            "' as non-configurable, non-writable");
+        }
+      }
     }
 
     return desc;
@@ -751,8 +766,8 @@ Validator.prototype = {
     }
 
     name = String(name);
-    desc = normalizePropertyDescriptor(desc);
-    var success = trap.call(this.handler, this.target, name, desc);
+    var descObj = normalizePropertyDescriptor(desc);
+    var success = trap.call(this.handler, this.target, name, descObj);
     success = !!success; // coerce to Boolean
 
     if (success === true) {
@@ -775,6 +790,21 @@ Validator.prototype = {
           throw new TypeError("cannot define incompatible property "+
                               "descriptor for property '"+name+"'");
         }
+        if (isDataDescriptor(targetDesc) &&
+            targetDesc.configurable === false &&
+            targetDesc.writable === true) {
+            if (desc.configurable === false && desc.writable === false) {
+              // if the property is non-configurable, writable on the target
+              // but was successfully reported to be updated to
+              // non-configurable, non-writable, it can later be reported
+              // again as non-configurable, writable, which violates
+              // the invariant that non-configurable, non-writable properties
+              // cannot change state
+              throw new TypeError(
+                "cannot successfully define non-configurable, writable " +
+                " property '" + name + "' as non-configurable, non-writable");
+            }
+          }
       }
 
       if (desc.configurable === false && !isSealedDesc(targetDesc)) {
@@ -783,9 +813,10 @@ Validator.prototype = {
         // it may later be reported as configurable or non-existent, which violates
         // the invariant that if the property might change or disappear, the
         // configurable attribute must be true.
-        throw new TypeError("cannot successfully define a non-configurable "+
-                            "descriptor for configurable or non-existent property '"+
-                            name+"'");
+        throw new TypeError(
+          "cannot successfully define a non-configurable " +
+          "descriptor for configurable or non-existent property '" +
+          name + "'");
       }
 
     }
@@ -829,10 +860,21 @@ Validator.prototype = {
     var res = trap.call(this.handler, this.target, name);
     res = !!res; // coerce to Boolean
 
+    var targetDesc;
     if (res === true) {
-      if (isSealed(name, this.target)) {
-        throw new TypeError("property '"+name+"' is non-configurable "+
+      targetDesc = Object.getOwnPropertyDescriptor(this.target, name);
+      if (targetDesc !== undefined && targetDesc.configurable === false) {
+        throw new TypeError("property '" + name + "' is non-configurable "+
                             "and can't be deleted");
+      }
+      if (targetDesc !== undefined && !Object_isExtensible(this.target)) {
+        // if the property still exists on a non-extensible target but
+        // is reported as successfully deleted, it may later be reported
+        // as present, which violates the invariant that an own property,
+        // deleted from a non-extensible object cannot reappear.
+        throw new TypeError(
+          "cannot successfully delete existing property '" + name +
+          "' on a non-extensible object");
       }
     }
 
