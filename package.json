@@ -11,7 +11,7 @@
     "harmony",
     "es6"
   ],
-  "license": "(Apache-2.0 OR MPL-1.1)"
+  "license": "(Apache-2.0 OR MPL-1.1)",
   "homepage": "https://github.com/tvcutsem/harmony-reflect",
   "typings": "index",
   "repository" : {
