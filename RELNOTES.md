@@ -1,3 +1,10 @@
+v1.5.1
+======
+
+Release date: December 23rd, 2016
+
+  * `package.json` file now contains `license` field with SPDX expression.
+
 v1.5.0
 ======
 
