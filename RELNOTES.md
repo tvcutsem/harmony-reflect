@@ -1,3 +1,10 @@
+v1.6.0
+======
+
+Release date: February 22nd, 2017
+
+  * The `Reflect` global is no longer blindly overridden. If `Reflect` global exists when this library is loaded, all standard `Reflect` methods are overridden with this shim's implementations, but any other methods defined on the `Reflect` global are left intact (See issue #79).
+
 v1.5.1
 ======
 
