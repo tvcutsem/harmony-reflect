@@ -1789,7 +1789,7 @@ Object.prototype.hasOwnProperty = function(name) {
 // ============= Reflection module =============
 // see http://wiki.ecmascript.org/doku.php?id=harmony:reflect_api
 
-var Reflect = global.Reflect = {
+var Reflect = {
   getOwnPropertyDescriptor: function(target, name) {
     return Object.getOwnPropertyDescriptor(target, name);
   },
@@ -2086,6 +2086,17 @@ var Reflect = global.Reflect = {
     return new (Function.prototype.bind.apply(newTarget, [null].concat(args)));
   }
 };
+
+// feature-test whether the Reflect global exists
+if (global.Reflect !== undefined) {
+  // Reflect exists, add/override the shimmed methods
+  Object.getOwnPropertyNames(Reflect).forEach(function (key) {
+    global.Reflect[key] = Reflect[key];
+  });
+} else {
+  // Reflect doesn't exist, define it as the shimmed Reflect object
+  global.Reflect = Reflect;
+}
 
 // feature-test whether the Proxy global exists, with
 // the harmony-era Proxy.create API
