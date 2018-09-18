@@ -2075,15 +2075,30 @@ var Reflect = {
     if (typeof target !== "function") {
       throw new TypeError("target is not a function: " + target);
     }
-    if (newTarget === undefined) {
-      newTarget = target;
+    if (newTarget === undefined || newTarget === target) {
+      // If newTarget is undefined, then newTarget is set to `target` and
+      // `Reflect.construct(target, ...args)` becomes equivalent to
+      // `new target(...args)`
+      // if `target` is an ES2015 Class constructor, it must be called using
+      // the `new` operator. Hence we use the new operator on a bound function
+      // to trigger the [[Construct]] internal method. This technique will work 
+      // for both plain constructor functions and ES2015 classes
+      return new (Function.prototype.bind.apply(target, [null].concat(args)));
     } else {
       if (typeof newTarget !== "function") {
         throw new TypeError("newTarget is not a function: " + target);
-      }      
+      }
+      // if newTarget is a *different* constructor function, we need to
+      // emulate [[Construct]] by falling back to [[Call]] with a hand-crafted
+      // new instance inheriting from newTarget.prototype
+      // Unfortunately this won't work if target is an ES2015 Constructor
+      // function, whose [[Call]] method throws an error (it must be invoked
+      // using the `new` operator)
+      var proto = newTarget.prototype;
+      var instance = (Object(proto) === proto) ? Object.create(proto) : {};
+      var result = Function.prototype.apply.call(target, instance, args);
+      return Object(result) === result ? result : instance;
     }
-
-    return new (Function.prototype.bind.apply(newTarget, [null].concat(args)));
   }
 };
 

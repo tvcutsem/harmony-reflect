@@ -307,7 +307,7 @@ function test() {
   // [[Construct]] newTarget
   (function() {
     "use strict";
-    var Super = function() { };
+    var Super = function() { this.x = 42; };
     var Sub = function() { };
     var ES2015Class = class {
       constructor () {
@@ -315,16 +315,29 @@ function test() {
       }
     };
     var instance = Reflect.construct(Super, [], Sub);
+    assert(instance.x === 42,
+           "construct correctly initializes instance when using newTarget");
     assert(Object.getPrototypeOf(instance) === Sub.prototype,
            "instance prototype === newTarget");
            
     var instance2 = Reflect.construct(Super, []);
+    assert(instance.x === 42,
+           "construct correctly initializes instance with default newTarget");
     assert(Object.getPrototypeOf(instance2) === Super.prototype,
           "newTarget defaults to target");
 
     var instance3 = Reflect.construct(ES2015Class, []);
     assert(instance3.prop === "someValue",
-          "correctly instantiates ES2015 classes");
+          "correctly instantiates ES2015 classes 1/2");
+    assert(Object.getPrototypeOf(instance3) === ES2015Class.prototype,
+          "correctly instantiates ES2015 classes 2/2");
+
+    assertThrows(
+      "Class constructor ES2015Class cannot be invoked without 'new'",
+      function() {
+        Reflect.construct(ES2015Class, [], Sub);
+      });
+
   }());
   
 }
