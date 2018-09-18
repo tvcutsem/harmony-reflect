@@ -1,3 +1,10 @@
+v1.6.1
+======
+
+Release date: September 18th, 2018
+
+  * Fixed a bug in `Reflect.construct` where, if the optional `newTarget` argument was passed, the shim would call the `newTarget` constructor function rather than the `target` constructor (See issue #81).
+
 v1.6.0
 ======
 
