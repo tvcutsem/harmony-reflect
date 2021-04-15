@@ -1,3 +1,10 @@
+v1.6.2
+======
+
+Release date: April 15th, 2021
+
+  * 'typings' field updated in package.json file (See issue #86). 
+
 v1.6.1
 ======
 
