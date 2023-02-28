@@ -84,9 +84,9 @@ An ownership boundary is declared as follows:
     var boundBox = boundary.entry;
 
 This creates an ownership boundary around a single Box object.
-The first argument to `guard` identifies an object that is to be placed
-*inside* the boundary. The return value of `guard` is a proxy giving access
-to the box from *outside* the boundary.
+The `entry:` parameter identifies an object that is to be placed
+*inside* the boundary. Once a boundary is created, `boundary.entry`
+is a proxy object giving access to the box from *outside* the boundary.
 
 The initial object inside the boundary is also named the *entry* object
 because this object typically forms the initial entry-point into the object
