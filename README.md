@@ -1,4 +1,4 @@
-[![NPM version](https://badge.fury.io/js/harmony-reflect.svg)](http://badge.fury.io/js/harmony-reflect) [![Dependencies](https://david-dm.org/tvcutsem/harmony-reflect.png)](https://david-dm.org/tvcutsem/harmony-reflect)
+[![NPM version](https://badge.fury.io/js/harmony-reflect.svg)](http://badge.fury.io/js/harmony-reflect) [![Dependencies](https://img.shields.io/librariesio/release/npm/harmony-reflect)](https://www.npmjs.com/package/harmony-reflect?activeTab=dependencies)
 
 This is a shim for the ECMAScript 6 [Reflect](http://www.ecma-international.org/ecma-262/6.0/#sec-reflect-object) and [Proxy](http://www.ecma-international.org/ecma-262/6.0/#sec-proxy-objects) objects.
 
